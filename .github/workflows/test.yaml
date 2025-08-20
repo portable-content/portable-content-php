@@ -41,7 +41,7 @@ jobs:
 
     - name: Run unit tests with coverage
       if: matrix.php-version == '8.3'
-      run: phpunit --testsuite=Unit --coverage-clover coverage-unit.xml
+      run: ./vendor/bin/phpunit --testsuite=Unit --coverage-clover coverage-unit.xml
 
     - name: Upload unit test coverage to Codecov
       if: matrix.php-version == '8.3'
@@ -86,7 +86,7 @@ jobs:
 
     - name: Run integration tests with coverage
       if: matrix.php-version == '8.3'
-      run: phpunit --testsuite=Integration --coverage-clover coverage-integration.xml
+      run: ./vendor/bin/phpunit --testsuite=Integration --coverage-clover coverage-integration.xml
 
     - name: Upload integration test coverage to Codecov
       if: matrix.php-version == '8.3'
