@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  test:
+  unit-tests:
     runs-on: ubuntu-latest
 
     strategy:
@@ -36,14 +36,63 @@ jobs:
     - name: Install dependencies
       run: composer install --prefer-dist --no-progress
 
-    - name: Run test suite
-      run: composer test-coverage
+    - name: Run unit tests
+      run: composer test:unit
 
-    - name: Upload coverage reports to Codecov
+    - name: Run unit tests with coverage
+      if: matrix.php-version == '8.3'
+      run: phpunit --testsuite=Unit --coverage-clover coverage-unit.xml
+
+    - name: Upload unit test coverage to Codecov
       if: matrix.php-version == '8.3'
       uses: codecov/codecov-action@v5
       with:
-        file: ./coverage.xml
-        flags: unittests,integration
-        name: codecov-umbrella
+        file: ./coverage-unit.xml
+        flags: unittests
+        name: codecov-unit
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        php-version: ['8.3', '8.4']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP ${{ matrix.php-version }}
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+        extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, dom, filter, gd, json
+        coverage: xdebug
+
+    - name: Cache Composer packages
+      id: composer-cache
+      uses: actions/cache@v4
+      with:
+        path: vendor
+        key: ${{ runner.os }}-php-${{ matrix.php-version }}-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php-${{ matrix.php-version }}-
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress
+
+    - name: Run integration tests
+      run: composer test:integration
+
+    - name: Run integration tests with coverage
+      if: matrix.php-version == '8.3'
+      run: phpunit --testsuite=Integration --coverage-clover coverage-integration.xml
+
+    - name: Upload integration test coverage to Codecov
+      if: matrix.php-version == '8.3'
+      uses: codecov/codecov-action@v5
+      with:
+        file: ./coverage-integration.xml
+        flags: integration
+        name: codecov-integration
         token: ${{ secrets.CODECOV_TOKEN }}

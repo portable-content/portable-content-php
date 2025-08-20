@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PortableContent\Tests;
+namespace PortableContent\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
 

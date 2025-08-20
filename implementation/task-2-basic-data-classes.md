@@ -1,7 +1,7 @@
 # Task 2: Basic Data Classes - Detailed Steps
 
 ## Overview
-Create the core PHP classes (ContentItem and MarkdownBlock) that represent the content entities. These classes form the foundation of the entire system and must be simple, well-designed, and testable.
+Create the core PHP classes (BlockInterface, ContentItem and MarkdownBlock) that represent the content entities. These classes form the foundation of the entire system and must be simple, well-designed, and testable. The BlockInterface ensures extensibility for future block types.
 
 **Estimated Time:** 1-2 hours  
 **Dependencies:** Task 1 (Project Setup) must be completed
@@ -19,23 +19,35 @@ Before writing code, let's clarify exactly what we're building:
 - Contains metadata (id, type, title, summary, timestamps)
 - Has one or more blocks of actual content
 
+**BlockInterface defines:**
+- Common contract for all block types (markdown, HTML, code, etc.)
+- Standard methods: getId(), getCreatedAt(), isEmpty(), getWordCount(), getType()
+- Ensures extensibility for future block implementations
+
 **MarkdownBlock represents:**
-- A single block of markdown content
+- A single block of markdown content implementing BlockInterface
 - Contains the raw markdown source
 - Has its own ID and timestamp
 
 ### Design Decisions Made:
 ```php
+// BlockInterface - the contract
+- getId(): string
+- getCreatedAt(): DateTimeImmutable
+- isEmpty(): bool
+- getWordCount(): int
+- getType(): string
+
 // ContentItem - the container
 - id: string (UUID)
 - type: string (e.g., 'note', 'article')
 - title: ?string (optional)
 - summary: ?string (optional)
-- blocks: array (of MarkdownBlock objects)
+- blocks: array (of BlockInterface objects)
 - createdAt: DateTimeImmutable
 - updatedAt: DateTimeImmutable
 
-// MarkdownBlock - the content
+// MarkdownBlock - the content (implements BlockInterface)
 - id: string (UUID)
 - source: string (the markdown text)
 - createdAt: DateTimeImmutable
@@ -48,7 +60,65 @@ Before writing code, let's clarify exactly what we're building:
 
 ---
 
-## Step 2.2: Create ContentItem Class
+## Step 2.2: Create BlockInterface
+**Time:** 10 minutes
+
+### Instructions:
+1. Create the file `src/BlockInterface.php`:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace PortableContent;
+
+use DateTimeImmutable;
+
+interface BlockInterface
+{
+    /**
+     * Get the unique identifier for this block.
+     */
+    public function getId(): string;
+
+    /**
+     * Get the creation timestamp for this block.
+     */
+    public function getCreatedAt(): DateTimeImmutable;
+
+    /**
+     * Check if this block is empty (contains no meaningful content).
+     */
+    public function isEmpty(): bool;
+
+    /**
+     * Get the word count for this block's content.
+     */
+    public function getWordCount(): int;
+
+    /**
+     * Get the block type identifier (e.g., 'markdown', 'html', 'code').
+     */
+    public function getType(): string;
+}
+```
+
+### Key Design Decisions Explained:
+- **Interface contract**: Defines common behavior for all block types
+- **Extensibility**: Allows for future block types (HTML, code, etc.)
+- **Type identification**: `getType()` method for polymorphic handling
+- **Standard utilities**: Common methods all blocks should provide
+
+### Validation:
+- [ ] File is created at `src/BlockInterface.php`
+- [ ] Interface uses correct namespace
+- [ ] All methods have proper return types
+- [ ] Documentation is clear
+
+---
+
+## Step 2.3: Create ContentItem Class
 **Time:** 15-20 minutes
 
 ### Instructions:
@@ -67,7 +137,7 @@ use Ramsey\Uuid\Uuid;
 final class ContentItem
 {
     /**
-     * @param MarkdownBlock[] $blocks
+     * @param BlockInterface[] $blocks
      */
     public function __construct(
         public readonly string $id,
@@ -124,7 +194,7 @@ final class ContentItem
         );
     }
 
-    public function addBlock(MarkdownBlock $block): self
+    public function addBlock(BlockInterface $block): self
     {
         $blocks = $this->blocks;
         $blocks[] = $block;
@@ -139,7 +209,7 @@ final class ContentItem
 - **`final` class**: Prevents inheritance complications
 - **Static factory method**: `create()` handles UUID generation and timestamps
 - **Immutable updates**: `withBlocks()`, `withTitle()` return new instances
-- **Type hints**: `@param MarkdownBlock[]` documents the array type
+- **Type hints**: `@param BlockInterface[]` documents the array type
 
 ### Validation:
 - [ ] File is created at `src/ContentItem.php`
@@ -150,7 +220,7 @@ final class ContentItem
 
 ---
 
-## Step 2.3: Create MarkdownBlock Class
+## Step 2.4: Create MarkdownBlock Class
 **Time:** 10-15 minutes
 
 ### Instructions:
@@ -166,7 +236,7 @@ namespace PortableContent;
 use DateTimeImmutable;
 use Ramsey\Uuid\Uuid;
 
-final class MarkdownBlock
+final class MarkdownBlock implements BlockInterface
 {
     public function __construct(
         public readonly string $id,
@@ -197,9 +267,24 @@ final class MarkdownBlock
         return trim($this->source) === '';
     }
 
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getCreatedAt(): DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
     public function getWordCount(): int
     {
         return str_word_count(strip_tags($this->source));
+    }
+
+    public function getType(): string
+    {
+        return 'markdown';
     }
 }
 ```
@@ -219,110 +304,132 @@ final class MarkdownBlock
 
 ---
 
-## Step 2.4: Test the Classes Manually
-**Time:** 10-15 minutes
+## Step 2.5: Create Unit Tests
+**Time:** 20-25 minutes
 
 ### Instructions:
-1. Create a simple test script `test_classes.php` in the project root:
+1. Create `tests/Unit/ContentItemTest.php` with comprehensive tests:
 
 ```php
 <?php
 
-require_once 'vendor/autoload.php';
+declare(strict_types=1);
 
+namespace PortableContent\Tests\Unit;
+
+use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\TestCase;
 use PortableContent\ContentItem;
+use PortableContent\Exceptions\InvalidContentException;
 use PortableContent\MarkdownBlock;
 
-echo "Testing ContentItem and MarkdownBlock classes...\n\n";
+#[CoversClass(ContentItem::class)]
+final class ContentItemTest extends TestCase
+{
+    public function testCreateWithValidData(): void
+    {
+        $content = ContentItem::create('note', 'Test Title', 'Test Summary');
 
-// Test 1: Create a MarkdownBlock
-echo "1. Creating MarkdownBlock:\n";
-$block = MarkdownBlock::create("# Hello World\n\nThis is my first markdown block!");
-echo "   ID: {$block->id}\n";
-echo "   Source length: " . strlen($block->source) . " characters\n";
-echo "   Word count: {$block->getWordCount()}\n";
-echo "   Created: {$block->createdAt->format('Y-m-d H:i:s')}\n\n";
+        $this->assertNotEmpty($content->id);
+        $this->assertEquals('note', $content->type);
+        $this->assertEquals('Test Title', $content->title);
+        $this->assertEquals('Test Summary', $content->summary);
+        $this->assertEmpty($content->blocks);
+        $this->assertInstanceOf(DateTimeImmutable::class, $content->createdAt);
+        $this->assertInstanceOf(DateTimeImmutable::class, $content->updatedAt);
+    }
 
-// Test 2: Create a ContentItem
-echo "2. Creating ContentItem:\n";
-$content = ContentItem::create('note', 'My First Note', 'A simple test note');
-echo "   ID: {$content->id}\n";
-echo "   Type: {$content->type}\n";
-echo "   Title: {$content->title}\n";
-echo "   Summary: {$content->summary}\n";
-echo "   Blocks: " . count($content->blocks) . "\n";
-echo "   Created: {$content->createdAt->format('Y-m-d H:i:s')}\n\n";
+    public function testCreateWithEmptyTypeThrowsException(): void
+    {
+        $this->expectException(InvalidContentException::class);
+        $this->expectExceptionMessage('Content type cannot be empty');
 
-// Test 3: Add block to content
-echo "3. Adding block to content:\n";
-$contentWithBlock = $content->addBlock($block);
-echo "   Blocks after adding: " . count($contentWithBlock->blocks) . "\n";
-echo "   First block source: " . substr($contentWithBlock->blocks[0]->source, 0, 20) . "...\n\n";
+        ContentItem::create('');
+    }
 
-// Test 4: Test immutability
-echo "4. Testing immutability:\n";
-echo "   Original content blocks: " . count($content->blocks) . "\n";
-echo "   Modified content blocks: " . count($contentWithBlock->blocks) . "\n";
-echo "   Original unchanged: " . ($content !== $contentWithBlock ? 'YES' : 'NO') . "\n\n";
+    public function testAddBlock(): void
+    {
+        $content = ContentItem::create('note', 'Test');
+        $block = MarkdownBlock::create('# Test Block');
 
-// Test 5: Test block utilities
-echo "5. Testing block utilities:\n";
-$emptyBlock = MarkdownBlock::create('   ');
-echo "   Empty block is empty: " . ($emptyBlock->isEmpty() ? 'YES' : 'NO') . "\n";
-echo "   Regular block is empty: " . ($block->isEmpty() ? 'YES' : 'NO') . "\n\n";
+        $updatedContent = $content->addBlock($block);
 
-echo "All tests completed successfully!\n";
+        $this->assertCount(0, $content->blocks); // Original unchanged
+        $this->assertCount(1, $updatedContent->blocks);
+        $this->assertSame($block, $updatedContent->blocks[0]);
+        $this->assertNotSame($content, $updatedContent);
+    }
+
+    // ... more tests
+}
 ```
 
-2. Run the test script:
+2. Create `tests/Unit/MarkdownBlockTest.php`:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace PortableContent\Tests\Unit;
+
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\TestCase;
+use PortableContent\BlockInterface;
+use PortableContent\MarkdownBlock;
+
+#[CoversClass(MarkdownBlock::class)]
+final class MarkdownBlockTest extends TestCase
+{
+    public function testImplementsBlockInterface(): void
+    {
+        $block = MarkdownBlock::create('# Test');
+
+        $this->assertInstanceOf(BlockInterface::class, $block);
+    }
+
+    public function testGetType(): void
+    {
+        $block = MarkdownBlock::create('# Test');
+
+        $this->assertEquals('markdown', $block->getType());
+    }
+
+    // ... more tests
+}
+```
+
+3. Run the unit tests:
 ```bash
-php test_classes.php
+composer test:unit
 ```
 
 ### Expected Output:
-```
-Testing ContentItem and MarkdownBlock classes...
+```bash
+$ composer test:unit
+PHPUnit 11.x.x by Sebastian Bergmann and contributors.
 
-1. Creating MarkdownBlock:
-   ID: 12345678-1234-1234-1234-123456789abc
-   Source length: 42 characters
-   Word count: 8
-   Created: 2024-01-01 12:00:00
+Runtime:       PHP 8.4.x
 
-2. Creating ContentItem:
-   ID: 87654321-4321-4321-4321-cba987654321
-   Type: note
-   Title: My First Note
-   Summary: A simple test note
-   Blocks: 0
-   Created: 2024-01-01 12:00:00
+..........................................                        42 / 42 (100%)
 
-3. Adding block to content:
-   Blocks after adding: 1
-   First block source: # Hello World...
+Time: 00:00.027, Memory: 10.00 MB
 
-4. Testing immutability:
-   Original content blocks: 0
-   Modified content blocks: 1
-   Original unchanged: YES
-
-5. Testing block utilities:
-   Empty block is empty: YES
-   Regular block is empty: NO
-
-All tests completed successfully!
+OK, but there were issues!
+Tests: 42, Assertions: 102, PHPUnit Warnings: 1.
 ```
 
 ### Validation:
-- [ ] Script runs without errors
-- [ ] UUIDs are generated correctly
-- [ ] Timestamps are created
-- [ ] Immutability works (original objects unchanged)
-- [ ] Utility methods work correctly
+- [ ] All unit tests pass
+- [ ] BlockInterface is properly implemented
+- [ ] ContentItem works with BlockInterface
+- [ ] Immutability is tested and verified
+- [ ] Error conditions are properly tested
 
 ---
 
-## Step 2.5: Add Type Safety and Documentation
+## Step 2.6: Add Type Safety and Documentation
 **Time:** 10-15 minutes
 
 ### Instructions:
@@ -352,7 +459,7 @@ final class InvalidContentException extends InvalidArgumentException
     public static function invalidBlockType(mixed $block): self
     {
         $type = get_debug_type($block);
-        return new self("Expected MarkdownBlock, got {$type}");
+        return new self("Expected BlockInterface implementation, got {$type}");
     }
 }
 ```
@@ -374,9 +481,9 @@ public static function create(
         throw InvalidContentException::emptyType();
     }
 
-    // Validate all blocks are MarkdownBlock instances
+    // Validate all blocks implement BlockInterface
     foreach ($blocks as $block) {
-        if (!$block instanceof MarkdownBlock) {
+        if (!$block instanceof BlockInterface) {
             throw InvalidContentException::invalidBlockType($block);
         }
     }
@@ -424,104 +531,96 @@ public static function create(string $source): self
 
 ---
 
-## Step 2.6: Test Error Handling
+## Step 2.7: Create Integration Tests
 **Time:** 10 minutes
 
 ### Instructions:
-1. Create `test_validation.php`:
+1. Create `tests/Integration/ContentCreationTest.php` to test complete workflows:
 
 ```php
 <?php
 
-require_once 'vendor/autoload.php';
+declare(strict_types=1);
 
+namespace PortableContent\Tests\Integration;
+
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PortableContent\ContentItem;
 use PortableContent\MarkdownBlock;
-use PortableContent\Exceptions\InvalidContentException;
+use PortableContent\Tests\Integration\IntegrationTestCase;
 
-echo "Testing validation and error handling...\n\n";
+#[CoversNothing]
+final class ContentCreationTest extends IntegrationTestCase
+{
+    public function testCompleteContentCreationWorkflow(): void
+    {
+        // Create multiple blocks
+        $titleBlock = MarkdownBlock::create('# My First Note');
+        $contentBlock = MarkdownBlock::create('This is the main content.');
+        $listBlock = MarkdownBlock::create("## Tasks\n\n- [ ] Task 1\n- [x] Task 2");
 
-// Test 1: Empty content type
-echo "1. Testing empty content type:\n";
-try {
-    ContentItem::create('');
-    echo "   ERROR: Should have thrown exception!\n";
-} catch (InvalidContentException $e) {
-    echo "   SUCCESS: {$e->getMessage()}\n";
+        // Create content item and add blocks
+        $content = ContentItem::create('note', 'My First Note', 'A test note')
+            ->addBlock($titleBlock)
+            ->addBlock($contentBlock)
+            ->addBlock($listBlock);
+
+        // Verify the complete structure
+        $this->assertEquals('note', $content->type);
+        $this->assertEquals('My First Note', $content->title);
+        $this->assertCount(3, $content->blocks);
+
+        // Test polymorphic behavior through BlockInterface
+        foreach ($content->blocks as $block) {
+            $this->assertEquals('markdown', $block->getType());
+            $this->assertNotEmpty($block->getId());
+            $this->assertIsInt($block->getWordCount());
+        }
+    }
 }
-
-// Test 2: Empty block source
-echo "\n2. Testing empty block source:\n";
-try {
-    MarkdownBlock::create('   ');
-    echo "   ERROR: Should have thrown exception!\n";
-} catch (InvalidContentException $e) {
-    echo "   SUCCESS: {$e->getMessage()}\n";
-}
-
-// Test 3: Invalid block type
-echo "\n3. Testing invalid block type:\n";
-try {
-    ContentItem::create('note', 'Title', 'Summary', ['not a block']);
-    echo "   ERROR: Should have thrown exception!\n";
-} catch (InvalidContentException $e) {
-    echo "   SUCCESS: {$e->getMessage()}\n";
-}
-
-// Test 4: Valid creation still works
-echo "\n4. Testing valid creation still works:\n";
-try {
-    $block = MarkdownBlock::create('# Valid markdown');
-    $content = ContentItem::create('note', 'Valid Title', null, [$block]);
-    echo "   SUCCESS: Created content with ID {$content->id}\n";
-} catch (Exception $e) {
-    echo "   ERROR: {$e->getMessage()}\n";
-}
-
-echo "\nValidation tests completed!\n";
 ```
 
-2. Run the validation test:
+2. Run the integration tests:
 ```bash
-php test_validation.php
+composer test:integration
 ```
 
 ### Expected Output:
-```
-Testing validation and error handling...
+```bash
+$ composer test:integration
+PHPUnit 11.x.x by Sebastian Bergmann and contributors.
 
-1. Testing empty content type:
-   SUCCESS: Content type cannot be empty
+Runtime:       PHP 8.4.x
 
-2. Testing empty block source:
-   SUCCESS: Block source cannot be empty
+..                                                                  2 / 2 (100%)
 
-3. Testing invalid block type:
-   SUCCESS: Expected MarkdownBlock, got string
+Time: 00:00.009, Memory: 10.00 MB
 
-4. Testing valid creation still works:
-   SUCCESS: Created content with ID 12345678-1234-1234-1234-123456789abc
-
-Validation tests completed!
+OK, but there were issues!
+Tests: 2, Assertions: 31, PHPUnit Warnings: 1.
 ```
 
 ### Validation:
-- [ ] Empty type throws exception
-- [ ] Empty source throws exception
-- [ ] Invalid block type throws exception
-- [ ] Valid creation still works
-- [ ] Error messages are clear
+- [ ] Integration tests pass
+- [ ] Complete workflows are tested
+- [ ] BlockInterface polymorphism works
+- [ ] Content creation with multiple blocks works
+- [ ] All interface methods are callable
 
 ---
 
-## Step 2.7: Clean Up and Document
+## Step 2.8: Update Documentation and Scripts
 **Time:** 10 minutes
 
 ### Instructions:
-1. Delete the test files (they were just for verification):
-```bash
-rm test_classes.php
-rm test_validation.php
+1. Update composer.json to add test scripts:
+```json
+{
+    "scripts": {
+        "test:unit": "phpunit --testsuite=Unit",
+        "test:integration": "phpunit --testsuite=Integration"
+    }
+}
 ```
 
 2. Update the main `README.md` to document the classes:
@@ -541,7 +640,7 @@ require_once 'vendor/autoload.php';
 use PortableContent\ContentItem;
 use PortableContent\MarkdownBlock;
 
-// Create a markdown block
+// Create a markdown block (implements BlockInterface)
 $block = MarkdownBlock::create('# Hello World\n\nThis is my first note!');
 
 // Create content with the block
@@ -562,221 +661,55 @@ echo "Word count: {$content->blocks[0]->getWordCount()}\n";
 ```
 
 ### Validation:
-- [ ] Test files are cleaned up
+- [ ] Composer scripts are added
 - [ ] README.md includes usage examples
-- [ ] Documentation is clear and helpful
-- [ ] Examples are copy-paste ready
+- [ ] Documentation mentions BlockInterface
+- [ ] Examples show polymorphic usage
 
 ---
 
-## Step 2.8: Create Unit Tests
-**Time:** 15-20 minutes
+## Step 2.9: Run All Tests
+**Time:** 5 minutes
 
 ### Instructions:
-1. Create `tests/Unit/ContentItemTest.php`:
+1. Run all tests to verify everything works:
 
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace PortableContent\Tests\Unit;
-
-use DateTimeImmutable;
-use PortableContent\ContentItem;
-use PortableContent\MarkdownBlock;
-use PortableContent\Exceptions\InvalidContentException;
-use PortableContent\Tests\TestCase;
-
-final class ContentItemTest extends TestCase
-{
-    public function testCreateWithValidData(): void
-    {
-        $content = ContentItem::create('note', 'Test Title', 'Test Summary');
-
-        $this->assertNotEmpty($content->id);
-        $this->assertEquals('note', $content->type);
-        $this->assertEquals('Test Title', $content->title);
-        $this->assertEquals('Test Summary', $content->summary);
-        $this->assertEmpty($content->blocks);
-        $this->assertInstanceOf(DateTimeImmutable::class, $content->createdAt);
-        $this->assertInstanceOf(DateTimeImmutable::class, $content->updatedAt);
-    }
-
-    public function testCreateWithMinimalData(): void
-    {
-        $content = ContentItem::create('note');
-
-        $this->assertEquals('note', $content->type);
-        $this->assertNull($content->title);
-        $this->assertNull($content->summary);
-        $this->assertEmpty($content->blocks);
-    }
-
-    public function testCreateWithEmptyTypeThrowsException(): void
-    {
-        $this->expectException(InvalidContentException::class);
-        $this->expectExceptionMessage('Content type cannot be empty');
-
-        ContentItem::create('');
-    }
-
-    public function testCreateWithInvalidBlockTypeThrowsException(): void
-    {
-        $this->expectException(InvalidContentException::class);
-        $this->expectExceptionMessage('Expected MarkdownBlock, got string');
-
-        ContentItem::create('note', 'Title', 'Summary', ['not a block']);
-    }
-
-    public function testAddBlock(): void
-    {
-        $content = ContentItem::create('note', 'Test');
-        $block = MarkdownBlock::create('# Test Block');
-
-        $updatedContent = $content->addBlock($block);
-
-        $this->assertCount(0, $content->blocks); // Original unchanged
-        $this->assertCount(1, $updatedContent->blocks);
-        $this->assertSame($block, $updatedContent->blocks[0]);
-    }
-
-    public function testWithTitle(): void
-    {
-        $content = ContentItem::create('note', 'Original Title');
-        $updatedContent = $content->withTitle('New Title');
-
-        $this->assertEquals('Original Title', $content->title); // Original unchanged
-        $this->assertEquals('New Title', $updatedContent->title);
-        $this->assertNotSame($content, $updatedContent);
-    }
-
-    public function testWithBlocks(): void
-    {
-        $content = ContentItem::create('note');
-        $block1 = MarkdownBlock::create('# Block 1');
-        $block2 = MarkdownBlock::create('# Block 2');
-
-        $updatedContent = $content->withBlocks([$block1, $block2]);
-
-        $this->assertCount(0, $content->blocks); // Original unchanged
-        $this->assertCount(2, $updatedContent->blocks);
-        $this->assertSame($block1, $updatedContent->blocks[0]);
-        $this->assertSame($block2, $updatedContent->blocks[1]);
-    }
-
-    public function testImmutability(): void
-    {
-        $content = ContentItem::create('note', 'Test');
-        $block = MarkdownBlock::create('# Test');
-
-        $modified = $content->addBlock($block)->withTitle('New Title');
-
-        // Original should be unchanged
-        $this->assertEquals('Test', $content->title);
-        $this->assertCount(0, $content->blocks);
-
-        // Modified should have changes
-        $this->assertEquals('New Title', $modified->title);
-        $this->assertCount(1, $modified->blocks);
-    }
-}
-```
-
-2. Create `tests/Unit/MarkdownBlockTest.php`:
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace PortableContent\Tests\Unit;
-
-use DateTimeImmutable;
-use PortableContent\MarkdownBlock;
-use PortableContent\Exceptions\InvalidContentException;
-use PortableContent\Tests\TestCase;
-
-final class MarkdownBlockTest extends TestCase
-{
-    public function testCreateWithValidSource(): void
-    {
-        $block = MarkdownBlock::create('# Hello World\n\nThis is a test.');
-
-        $this->assertNotEmpty($block->id);
-        $this->assertEquals('# Hello World\n\nThis is a test.', $block->source);
-        $this->assertInstanceOf(DateTimeImmutable::class, $block->createdAt);
-    }
-
-    public function testCreateWithEmptySourceThrowsException(): void
-    {
-        $this->expectException(InvalidContentException::class);
-        $this->expectExceptionMessage('Block source cannot be empty');
-
-        MarkdownBlock::create('   ');
-    }
-
-    public function testWithSource(): void
-    {
-        $block = MarkdownBlock::create('# Original');
-        $updatedBlock = $block->withSource('# Updated');
-
-        $this->assertEquals('# Original', $block->source); // Original unchanged
-        $this->assertEquals('# Updated', $updatedBlock->source);
-        $this->assertEquals($block->id, $updatedBlock->id); // ID preserved
-        $this->assertEquals($block->createdAt, $updatedBlock->createdAt); // Timestamp preserved
-    }
-
-    public function testIsEmpty(): void
-    {
-        $emptyBlock = MarkdownBlock::create('   ');
-        $nonEmptyBlock = MarkdownBlock::create('# Not Empty');
-
-        $this->assertTrue($emptyBlock->isEmpty());
-        $this->assertFalse($nonEmptyBlock->isEmpty());
-    }
-
-    public function testGetWordCount(): void
-    {
-        $block = MarkdownBlock::create('# Hello World\n\nThis is a test with **bold** text.');
-
-        $this->assertEquals(9, $block->getWordCount());
-    }
-
-    public function testGetWordCountWithEmptyContent(): void
-    {
-        $block = MarkdownBlock::create('   ');
-
-        $this->assertEquals(0, $block->getWordCount());
-    }
-
-    public function testImmutability(): void
-    {
-        $original = MarkdownBlock::create('# Original');
-        $modified = $original->withSource('# Modified');
-
-        $this->assertNotSame($original, $modified);
-        $this->assertEquals('# Original', $original->source);
-        $this->assertEquals('# Modified', $modified->source);
-    }
-}
-```
-
-3. Run the tests:
 ```bash
+# Run unit tests
+composer test:unit
+
+# Run integration tests
+composer test:integration
+
+# Run all tests
 composer test
 ```
 
+### Expected Output:
+```bash
+$ composer test
+PHPUnit 11.x.x by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.x
+
+............................................                      44 / 44 (100%)
+
+Time: 00:00.030, Memory: 10.00 MB
+
+OK, but there were issues!
+Tests: 44, Assertions: 133, PHPUnit Warnings: 1.
+```
+
 ### Validation:
-- [ ] Unit tests are created for both classes
-- [ ] All tests pass successfully
-- [ ] Tests cover main functionality and edge cases
-- [ ] Tests verify immutability behavior
-- [ ] Tests check error conditions
+- [ ] All tests pass successfully (44 tests, 133 assertions)
+- [ ] Unit tests cover all classes and edge cases
+- [ ] Integration tests verify complete workflows
+- [ ] BlockInterface polymorphism is tested
+- [ ] Both test suites can be run separately
 
 ---
 
-## Step 2.9: Commit the Changes
+## Step 2.10: Commit the Changes
 **Time:** 5 minutes
 
 ### Instructions:
@@ -787,14 +720,16 @@ git add .
 
 2. Commit with descriptive message:
 ```bash
-git commit -m "Implement basic data classes (ContentItem and MarkdownBlock)
+git commit -m "Implement basic data classes with BlockInterface
 
-- Created ContentItem class with immutable design
-- Created MarkdownBlock class with utility methods
+- Created BlockInterface for extensible block system
+- Created ContentItem class with immutable design using BlockInterface
+- Created MarkdownBlock class implementing BlockInterface
 - Added comprehensive validation and error handling
 - Implemented factory methods with UUID generation
-- Added type safety and documentation
-- Updated README with usage examples
+- Added comprehensive unit and integration tests
+- Updated composer scripts for separate test suites
+- Updated GitHub Actions for separate unit/integration jobs
 
 Classes are fully functional and ready for repository layer."
 ```
@@ -815,9 +750,10 @@ git push origin main
 ## Completion Checklist
 
 ### Core Classes:
-- [ ] ContentItem class with all required properties
-- [ ] MarkdownBlock class with source and utilities
-- [ ] Both classes are immutable and type-safe
+- [ ] BlockInterface defining contract for all block types
+- [ ] ContentItem class working with BlockInterface (not concrete classes)
+- [ ] MarkdownBlock class implementing BlockInterface
+- [ ] All classes are immutable and type-safe
 - [ ] Factory methods generate UUIDs and timestamps
 
 ### Validation:
@@ -827,10 +763,12 @@ git push origin main
 - [ ] Block type validation
 
 ### Testing:
-- [ ] Manual testing confirms classes work
-- [ ] Error handling works correctly
-- [ ] Immutability is preserved
-- [ ] Utility methods function properly
+- [ ] Comprehensive unit tests for all classes
+- [ ] Integration tests for complete workflows
+- [ ] Separate test suites (unit/integration) with composer scripts
+- [ ] GitHub Actions updated for separate test jobs
+- [ ] All tests pass (44 tests, 133+ assertions)
+- [ ] BlockInterface polymorphism is tested
 
 ### Documentation:
 - [ ] README.md updated with usage examples
