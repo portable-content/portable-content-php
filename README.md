@@ -1,6 +1,8 @@
 # Portable Content PHP
 
-PHP implementation of the portable content system - Phase 1A MVP.
+PHP implementation of the portable content system
+
+[![codecov](https://codecov.io/gh/portable-content/portable-content-php/graph/badge.svg?token=V5i88ShX88)](https://codecov.io/gh/portable-content/portable-content-php)
 
 ## Overview
 
@@ -66,4 +68,4 @@ migrations/    # Database schema migrations
 
 ## License
 
-MIT License (or your preferred license)
+Apache 2.0 License
