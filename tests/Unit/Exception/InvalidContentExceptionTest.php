@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace PortableContent\Tests\Unit\Exception;
 
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use PortableContent\Exception\InvalidContentException;
 
 /**
  * @internal
  */
-#[CoversClass(InvalidContentException::class)]
 final class InvalidContentExceptionTest extends TestCase
 {
     public function testExtendsInvalidArgumentException(): void

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace PortableContent\Tests\Unit\Block;
 
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use PortableContent\Block\MarkdownBlock;
 use PortableContent\Contracts\BlockInterface;
@@ -13,7 +12,6 @@ use PortableContent\Exception\InvalidContentException;
 /**
  * @internal
  */
-#[CoversClass(MarkdownBlock::class)]
 final class MarkdownBlockTest extends TestCase
 {
     public function testCreateWithValidSource(): void
