@@ -43,19 +43,13 @@ jobs:
       if: matrix.php-version == '8.3'
       run: XDEBUG_MODE=coverage ./vendor/bin/phpunit --testsuite=Unit --coverage-clover coverage-unit.xml
 
-    - name: Check coverage file exists
+    - name: Upload unit test coverage artifacts
       if: matrix.php-version == '8.3'
-      run: ls -la coverage-unit.xml
-
-    - name: Upload unit test coverage to Codecov
-      if: matrix.php-version == '8.3'
-      uses: codecov/codecov-action@v4
+      uses: actions/upload-artifact@v4
       with:
-        file: ./coverage-unit.xml
-        flags: unittests
-        name: codecov-unit
-        fail_ci_if_error: false
-        verbose: true
+        name: unit-coverage
+        path: coverage-unit.xml
+        retention-days: 1
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -93,16 +87,55 @@ jobs:
       if: matrix.php-version == '8.3'
       run: XDEBUG_MODE=coverage ./vendor/bin/phpunit --testsuite=Integration --coverage-clover coverage-integration.xml
 
-    - name: Check coverage file exists
+    - name: Upload integration test coverage artifacts
       if: matrix.php-version == '8.3'
-      run: ls -la coverage-integration.xml
-
-    - name: Upload integration test coverage to Codecov
-      if: matrix.php-version == '8.3'
-      uses: codecov/codecov-action@v4
+      uses: actions/upload-artifact@v4
       with:
-        file: ./coverage-integration.xml
+        name: integration-coverage
+        path: coverage-integration.xml
+        retention-days: 1
+
+  codecov:
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    if: always()
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download unit coverage
+      uses: actions/download-artifact@v4
+      with:
+        name: unit-coverage
+        path: ./
+
+    - name: Download integration coverage
+      uses: actions/download-artifact@v4
+      with:
+        name: integration-coverage
+        path: ./
+
+    - name: List coverage files
+      run: |
+        echo "Coverage files in current directory:"
+        ls -la *.xml || echo "No XML files found"
+        echo "All files:"
+        ls -la
+
+    - name: Upload unit coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage-unit.xml
+        flags: unittests
+        name: codecov-unit
+        verbose: true
+
+    - name: Upload integration coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage-integration.xml
         flags: integration
         name: codecov-integration
-        fail_ci_if_error: false
         verbose: true
