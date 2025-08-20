@@ -1,0 +1,50 @@
+{
+    "name": "portable-content/portable-content-php",
+    "description": "PHP implementation of portable content system",
+    "license": "Apache-2.0",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Corvus Meliora",
+            "email": "corvus@zestic.com"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "ramsey/uuid": "^4.7"
+    },
+    "require-dev": {
+        "ergebnis/composer-normalize": "^2.42",
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "phpstan/phpstan": "^1.10",
+        "phpstan/phpstan-phpunit": "^1.4",
+        "phpunit/phpunit": "^11.0",
+        "roave/security-advisories": "dev-master"
+    },
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "PortableContent\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "PortableContent\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true
+        }
+    },
+    "scripts": {
+        "composer-normalize": "composer normalize --dry-run",
+        "composer-normalize-fix": "composer normalize",
+        "cs-check": "php-cs-fixer fix --dry-run --diff",
+        "cs-fix": "php-cs-fixer fix",
+        "phpstan": "phpstan analyse",
+        "security-audit": "composer audit",
+        "test": "phpunit",
+        "test-coverage": "phpunit --coverage-clover coverage.xml --coverage-html coverage"
+    }
+}

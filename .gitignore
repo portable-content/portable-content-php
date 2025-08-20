@@ -1,0 +1,39 @@
+# Composer
+/vendor/
+
+# PHPUnit
+/coverage/
+coverage.xml
+.phpunit.cache/
+.phpunit.result.cache
+
+# PHP CS Fixer
+.php-cs-fixer.cache
+
+# PHPStan
+.phpstan.cache
+
+# Storage
+/storage/*.db
+/storage/*.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Testing
+/tests/_output/
+/tests/_support/_generated/
+
+# Build artifacts
+/build/
