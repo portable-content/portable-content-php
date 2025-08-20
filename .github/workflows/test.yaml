@@ -41,16 +41,21 @@ jobs:
 
     - name: Run unit tests with coverage
       if: matrix.php-version == '8.3'
-      run: ./vendor/bin/phpunit --testsuite=Unit --coverage-clover coverage-unit.xml
+      run: XDEBUG_MODE=coverage ./vendor/bin/phpunit --testsuite=Unit --coverage-clover coverage-unit.xml
+
+    - name: Check coverage file exists
+      if: matrix.php-version == '8.3'
+      run: ls -la coverage-unit.xml
 
     - name: Upload unit test coverage to Codecov
       if: matrix.php-version == '8.3'
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage-unit.xml
         flags: unittests
         name: codecov-unit
-        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+        verbose: true
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -86,13 +91,18 @@ jobs:
 
     - name: Run integration tests with coverage
       if: matrix.php-version == '8.3'
-      run: ./vendor/bin/phpunit --testsuite=Integration --coverage-clover coverage-integration.xml
+      run: XDEBUG_MODE=coverage ./vendor/bin/phpunit --testsuite=Integration --coverage-clover coverage-integration.xml
+
+    - name: Check coverage file exists
+      if: matrix.php-version == '8.3'
+      run: ls -la coverage-integration.xml
 
     - name: Upload integration test coverage to Codecov
       if: matrix.php-version == '8.3'
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage-integration.xml
         flags: integration
         name: codecov-integration
-        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+        verbose: true
