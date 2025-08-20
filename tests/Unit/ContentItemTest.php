@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace PortableContent\Tests\Unit;
 
-use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use PortableContent\Block\MarkdownBlock;
 use PortableContent\ContentItem;
@@ -12,6 +11,8 @@ use PortableContent\Exception\InvalidContentException;
 
 /**
  * @internal
+ *
+ * @coversNothing
  */
 final class ContentItemTest extends TestCase
 {
@@ -24,8 +25,8 @@ final class ContentItemTest extends TestCase
         $this->assertEquals('Test Title', $content->title);
         $this->assertEquals('Test Summary', $content->summary);
         $this->assertEmpty($content->blocks);
-        $this->assertInstanceOf(DateTimeImmutable::class, $content->createdAt);
-        $this->assertInstanceOf(DateTimeImmutable::class, $content->updatedAt);
+        $this->assertInstanceOf(\DateTimeImmutable::class, $content->createdAt);
+        $this->assertInstanceOf(\DateTimeImmutable::class, $content->updatedAt);
     }
 
     public function testCreateWithMinimalData(): void
@@ -59,7 +60,7 @@ final class ContentItemTest extends TestCase
         $this->expectException(InvalidContentException::class);
         $this->expectExceptionMessage('Expected BlockInterface implementation, got string');
 
-        /** @phpstan-ignore-next-line */
+        // @phpstan-ignore-next-line
         ContentItem::create('note', 'Title', 'Summary', ['not a block']);
     }
 
@@ -129,7 +130,7 @@ final class ContentItemTest extends TestCase
         $this->expectException(InvalidContentException::class);
         $this->expectExceptionMessage('Expected BlockInterface implementation, got string');
 
-        /** @phpstan-ignore-next-line */
+        // @phpstan-ignore-next-line
         $content->withBlocks(['invalid block']);
     }
 
@@ -152,10 +153,10 @@ final class ContentItemTest extends TestCase
     public function testUpdatedAtChangesOnModification(): void
     {
         $content = ContentItem::create('note', 'Test');
-        
+
         // Small delay to ensure different timestamps
         usleep(1000);
-        
+
         $modified = $content->withTitle('New Title');
 
         $this->assertGreaterThan($content->updatedAt, $modified->updatedAt);
@@ -182,7 +183,8 @@ final class ContentItemTest extends TestCase
         $content = ContentItem::create('note', 'My First Note', 'A comprehensive test note')
             ->addBlock($titleBlock)
             ->addBlock($contentBlock)
-            ->addBlock($listBlock);
+            ->addBlock($listBlock)
+        ;
 
         // Verify the complete structure
         $this->assertEquals('note', $content->type);
@@ -234,7 +236,7 @@ final class ContentItemTest extends TestCase
         // Test that we can work with blocks through the interface
         $totalWords = array_reduce(
             $content->blocks,
-            fn(int $total, $block) => $total + $block->getWordCount(),
+            fn (int $total, $block) => $total + $block->getWordCount(),
             0
         );
 
