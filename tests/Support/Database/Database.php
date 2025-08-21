@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace PortableContent\Tests\Support\Database;
 
-use PDO;
-use PDOException;
-use RuntimeException;
-
 final class Database
 {
     private const DEFAULT_OPTIONS = [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
+        \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+        \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+        \PDO::ATTR_EMULATE_PREPARES => false,
     ];
 
-    public static function create(string $path): PDO
+    public static function create(string $path): \PDO
     {
         try {
             $dsn = "sqlite:{$path}";
@@ -36,7 +32,7 @@ final class Database
         return self::create(':memory:');
     }
 
-    public static function initialize(string $path): PDO
+    public static function initialize(string $path): \PDO
     {
         // Create directory if it doesn't exist
         $directory = dirname($path);
@@ -64,8 +60,8 @@ final class Database
         }
 
         $migrationFiles = glob($migrationsPath.'/*.sql');
-        if ($migrationFiles === false) {
-            throw new RuntimeException("Failed to read migrations directory: {$migrationsPath}");
+        if (false === $migrationFiles) {
+            throw new \RuntimeException("Failed to read migrations directory: {$migrationsPath}");
         }
 
         sort($migrationFiles);
