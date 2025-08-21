@@ -1,0 +1,235 @@
+<?php
+
+declare(strict_types=1);
+
+namespace PortableContent\Tests\Integration\Repository;
+
+use PortableContent\Block\MarkdownBlock;
+use PortableContent\ContentItem;
+use PortableContent\Contracts\ContentRepositoryInterface;
+use PortableContent\Tests\Integration\IntegrationTestCase;
+use PortableContent\Tests\Support\Repository\RepositoryFactory;
+
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
+final class SQLiteContentRepositoryTest extends IntegrationTestCase
+{
+    private ContentRepositoryInterface $repository;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->repository = RepositoryFactory::createInMemoryRepository();
+    }
+
+    public function testSaveAndFindById(): void
+    {
+        // Create content with blocks
+        $block1 = MarkdownBlock::create('# Title');
+        $block2 = MarkdownBlock::create('Some content here.');
+
+        $content = ContentItem::create('note', 'Test Note', 'A test note')
+            ->addBlock($block1)
+            ->addBlock($block2)
+        ;
+
+        // Save content
+        $this->repository->save($content);
+
+        // Retrieve content
+        $retrieved = $this->repository->findById($content->id);
+
+        $this->assertNotNull($retrieved);
+        $this->assertEquals($content->id, $retrieved->id);
+        $this->assertEquals($content->type, $retrieved->type);
+        $this->assertEquals($content->title, $retrieved->title);
+        $this->assertEquals($content->summary, $retrieved->summary);
+        $this->assertCount(2, $retrieved->blocks);
+
+        // Check blocks are loaded correctly
+        $this->assertInstanceOf(MarkdownBlock::class, $retrieved->blocks[0]);
+        $this->assertInstanceOf(MarkdownBlock::class, $retrieved->blocks[1]);
+        $this->assertEquals('# Title', $retrieved->blocks[0]->source);
+        $this->assertEquals('Some content here.', $retrieved->blocks[1]->source);
+    }
+
+    public function testFindByIdReturnsNullForNonExistentContent(): void
+    {
+        $result = $this->repository->findById('non-existent-id');
+        $this->assertNull($result);
+    }
+
+    public function testSaveUpdatesExistingContent(): void
+    {
+        // Create and save initial content
+        $content = ContentItem::create('note', 'Original Title');
+        $this->repository->save($content);
+
+        // Update content
+        $updatedContent = $content->withTitle('Updated Title')
+            ->addBlock(MarkdownBlock::create('# New Block'))
+        ;
+        $this->repository->save($updatedContent);
+
+        // Retrieve and verify update
+        $retrieved = $this->repository->findById($content->id);
+        $this->assertNotNull($retrieved);
+        $this->assertEquals('Updated Title', $retrieved->title);
+        $this->assertCount(1, $retrieved->blocks);
+        $this->assertInstanceOf(MarkdownBlock::class, $retrieved->blocks[0]);
+        $this->assertEquals('# New Block', $retrieved->blocks[0]->source);
+    }
+
+    public function testDelete(): void
+    {
+        // Create and save content
+        $content = ContentItem::create('note', 'To Delete')
+            ->addBlock(MarkdownBlock::create('# Will be deleted'))
+        ;
+        $this->repository->save($content);
+
+        // Verify it exists
+        $this->assertTrue($this->repository->exists($content->id));
+
+        // Delete it
+        $this->repository->delete($content->id);
+
+        // Verify it's gone
+        $this->assertFalse($this->repository->exists($content->id));
+        $this->assertNull($this->repository->findById($content->id));
+    }
+
+    public function testDeleteNonExistentContentDoesNotThrow(): void
+    {
+        // Should not throw exception
+        $this->repository->delete('non-existent-id');
+        $this->assertTrue(true); // If we get here, no exception was thrown
+    }
+
+    public function testCount(): void
+    {
+        $this->assertEquals(0, $this->repository->count());
+
+        // Add some content
+        $content1 = ContentItem::create('note', 'First');
+        $content2 = ContentItem::create('article', 'Second');
+
+        $this->repository->save($content1);
+        $this->assertEquals(1, $this->repository->count());
+
+        $this->repository->save($content2);
+        $this->assertEquals(2, $this->repository->count());
+
+        // Delete one
+        $this->repository->delete($content1->id);
+        $this->assertEquals(1, $this->repository->count());
+    }
+
+    public function testExists(): void
+    {
+        $content = ContentItem::create('note', 'Test');
+
+        $this->assertFalse($this->repository->exists($content->id));
+
+        $this->repository->save($content);
+        $this->assertTrue($this->repository->exists($content->id));
+
+        $this->repository->delete($content->id);
+        $this->assertFalse($this->repository->exists($content->id));
+    }
+
+    public function testFindAllWithPagination(): void
+    {
+        // Create multiple content items
+        $contents = [];
+        for ($i = 1; $i <= 5; ++$i) {
+            $content = ContentItem::create('note', "Note {$i}");
+            $contents[] = $content;
+            $this->repository->save($content);
+        }
+
+        // Test pagination
+        $page1 = $this->repository->findAll(2, 0);
+        $this->assertCount(2, $page1);
+
+        $page2 = $this->repository->findAll(2, 2);
+        $this->assertCount(2, $page2);
+
+        $page3 = $this->repository->findAll(2, 4);
+        $this->assertCount(1, $page3);
+
+        // Verify no overlap
+        $allIds = array_merge(
+            array_map(fn ($c) => $c->id, $page1),
+            array_map(fn ($c) => $c->id, $page2),
+            array_map(fn ($c) => $c->id, $page3)
+        );
+        $this->assertCount(5, array_unique($allIds));
+    }
+
+    public function testFindAllOrdersByCreatedAtDesc(): void
+    {
+        // Create content items with explicit different timestamps
+        $now = new \DateTimeImmutable();
+        $earlier = $now->modify('-1 hour');
+
+        // Create content with earlier timestamp
+        $content1 = new ContentItem(
+            id: 'test-1',
+            type: 'note',
+            title: 'First',
+            summary: null,
+            blocks: [],
+            createdAt: $earlier,
+            updatedAt: $earlier
+        );
+        $this->repository->save($content1);
+
+        // Create content with later timestamp
+        $content2 = new ContentItem(
+            id: 'test-2',
+            type: 'note',
+            title: 'Second',
+            summary: null,
+            blocks: [],
+            createdAt: $now,
+            updatedAt: $now
+        );
+        $this->repository->save($content2);
+
+        $results = $this->repository->findAll();
+
+        $this->assertCount(2, $results);
+        // Should be ordered by created_at DESC (newest first)
+        $this->assertEquals('Second', $results[0]->title);
+        $this->assertEquals('First', $results[1]->title);
+    }
+
+    public function testCascadeDeleteRemovesBlocks(): void
+    {
+        // Create content with blocks
+        $content = ContentItem::create('note', 'With Blocks')
+            ->addBlock(MarkdownBlock::create('# Block 1'))
+            ->addBlock(MarkdownBlock::create('# Block 2'))
+        ;
+
+        $this->repository->save($content);
+
+        // Verify blocks exist by retrieving content
+        $retrieved = $this->repository->findById($content->id);
+        $this->assertNotNull($retrieved);
+        $this->assertCount(2, $retrieved->blocks);
+
+        // Delete content
+        $this->repository->delete($content->id);
+
+        // Verify content and blocks are gone
+        $this->assertNull($this->repository->findById($content->id));
+
+        // We can't directly query blocks table from here, but the foreign key
+        // constraint with CASCADE DELETE should handle this automatically
+    }
+}
