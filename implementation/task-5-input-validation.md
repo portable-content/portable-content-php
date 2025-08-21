@@ -15,11 +15,12 @@ Implement a flexible, adapter-based validation system for content creation and u
 We'll implement an adapter-based validation system that supports multiple validation libraries while maintaining a clean, consistent interface.
 
 **Architecture Principles:**
-- **Adapter Pattern**: Support multiple validation libraries (Respect, Symfony, Laravel, Native)
+- **Dependency Injection**: Users inject their preferred validation adapter
 - **Clean Interfaces**: Clear contracts in the Contracts/ folder
+- **No Lock-in**: No factory pattern - users choose and configure their own adapters
 - **Separation of Concerns**: Separate sanitization and validation services
 - **Type Safety**: Use DTOs instead of arrays for validated data
-- **Extensibility**: Strategy pattern for different block types
+- **Proven Libraries**: Use established validation libraries like Symfony Validator
 
 **Content-Level Validation Rules:**
 - `type`: Required, non-empty string, max 50 characters, alphanumeric + underscore
@@ -77,14 +78,14 @@ interface ContentValidatorInterface
 }
 ```
 
-2. Create `src/Contracts/ValidationResult.php`:
+2. Create `src/Validation/ValueObjects/ValidationResult.php`:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace PortableContent\Contracts;
+namespace PortableContent\Validation\ValueObjects;
 
 final class ValidationResult
 {
@@ -189,18 +190,18 @@ interface SanitizerInterface
 
 ---
 
-## Step 5.3: Create Data Transfer Objects (DTOs)
+## Step 5.3: Create Value Objects
 **Time:** 15 minutes
 
 ### Instructions:
-1. Create `src/Validation/DTOs/ContentCreationRequest.php`:
+1. Create `src/Validation/ValueObjects/ContentCreationRequest.php`:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace PortableContent\Validation\DTOs;
+namespace PortableContent\Validation\ValueObjects;
 
 final class ContentCreationRequest
 {
@@ -247,14 +248,14 @@ final class ContentCreationRequest
 }
 ```
 
-2. Create `src/Validation/DTOs/BlockData.php`:
+2. Create `src/Validation/ValueObjects/BlockData.php`:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace PortableContent\Validation\DTOs;
+namespace PortableContent\Validation\ValueObjects;
 
 final class BlockData
 {
@@ -282,223 +283,29 @@ final class BlockData
 ```
 
 ### Key Features:
-- **Type safety**: Immutable DTOs replace primitive arrays
+- **Type safety**: Immutable value objects replace primitive arrays
 - **Clear contracts**: Explicit structure for validation data
 - **Factory methods**: Easy creation from array data
 - **Backward compatibility**: Can convert back to arrays if needed
 
 ### Validation:
-- [ ] DTOs are created for type-safe data handling
+- [ ] Value objects are created for type-safe data handling
 - [ ] Factory methods support array conversion
 - [ ] Immutable design prevents data corruption
 - [ ] Clear structure for validation pipeline
 
-    /**
-     * Validate content update data (similar to create but allows partial updates)
-     */
-    public function validateUpdateRequest(array $data): void
-    {
-        $errors = [];
-
-        // Type is optional for updates, but if provided must be valid
-        if (isset($data['type'])) {
-            $typeErrors = $this->validateType($data['type']);
-            if (!empty($typeErrors)) {
-                $errors['type'] = $typeErrors;
-            }
-        }
-
-        // Title validation (optional)
-        if (isset($data['title'])) {
-            $titleErrors = $this->validateTitle($data['title']);
-            if (!empty($titleErrors)) {
-                $errors['title'] = $titleErrors;
-            }
-        }
-
-        // Summary validation (optional)
-        if (isset($data['summary'])) {
-            $summaryErrors = $this->validateSummary($data['summary']);
-            if (!empty($summaryErrors)) {
-                $errors['summary'] = $summaryErrors;
-            }
-        }
-
-        // Blocks validation (optional for updates)
-        if (isset($data['blocks'])) {
-            $blocksErrors = $this->validateBlocks($data['blocks']);
-            if (!empty($blocksErrors)) {
-                $errors['blocks'] = $blocksErrors;
-            }
-        }
-
-        if (!empty($errors)) {
-            throw new ValidationException($errors);
-        }
-    }
-
-    /**
-     * Sanitize input data by trimming strings and normalizing
-     */
-    public function sanitizeInput(array $data): array
-    {
-        $sanitized = [];
-
-        if (isset($data['type'])) {
-            $sanitized['type'] = trim((string) $data['type']);
-        }
-
-        if (isset($data['title'])) {
-            $title = trim((string) $data['title']);
-            $sanitized['title'] = $title !== '' ? $title : null;
-        }
-
-        if (isset($data['summary'])) {
-            $summary = trim((string) $data['summary']);
-            $sanitized['summary'] = $summary !== '' ? $summary : null;
-        }
-
-        if (isset($data['blocks']) && is_array($data['blocks'])) {
-            $sanitized['blocks'] = [];
-            foreach ($data['blocks'] as $block) {
-                if (is_array($block)) {
-                    $sanitizedBlock = [];
-                    if (isset($block['kind'])) {
-                        $sanitizedBlock['kind'] = trim((string) $block['kind']);
-                    }
-                    if (isset($block['source'])) {
-                        $sanitizedBlock['source'] = (string) $block['source'];
-                    }
-                    $sanitized['blocks'][] = $sanitizedBlock;
-                }
-            }
-        }
-
-        return $sanitized;
-    }
-
-    private function validateType(?string $type): array
-    {
-        $errors = [];
-
-        if ($type === null || $type === '') {
-            $errors[] = 'Type is required';
-            return $errors;
-        }
-
-        if (strlen($type) > self::MAX_TYPE_LENGTH) {
-            $errors[] = "Type must be {self::MAX_TYPE_LENGTH} characters or less";
-        }
-
-        if (!preg_match('/^[a-zA-Z0-9_]+$/', $type)) {
-            $errors[] = 'Type must contain only letters, numbers, and underscores';
-        }
-
-        return $errors;
-    }
-
-    private function validateTitle(?string $title): array
-    {
-        $errors = [];
-
-        if ($title !== null && strlen($title) > self::MAX_TITLE_LENGTH) {
-            $errors[] = "Title must be {self::MAX_TITLE_LENGTH} characters or less";
-        }
-
-        return $errors;
-    }
-
-    private function validateSummary(?string $summary): array
-    {
-        $errors = [];
-
-        if ($summary !== null && strlen($summary) > self::MAX_SUMMARY_LENGTH) {
-            $errors[] = "Summary must be {self::MAX_SUMMARY_LENGTH} characters or less";
-        }
-
-        return $errors;
-    }
-
-    private function validateBlocks(array $blocks): array
-    {
-        $errors = [];
-
-        if (empty($blocks)) {
-            $errors[] = 'At least one block is required';
-            return $errors;
-        }
-
-        if (count($blocks) > self::MAX_BLOCKS) {
-            $errors[] = "Maximum {self::MAX_BLOCKS} blocks allowed";
-        }
-
-        foreach ($blocks as $index => $block) {
-            $blockErrors = $this->validateBlock($block, $index);
-            if (!empty($blockErrors)) {
-                $errors = array_merge($errors, $blockErrors);
-            }
-        }
-
-        return $errors;
-    }
-
-    private function validateBlock(mixed $block, int $index): array
-    {
-        $errors = [];
-
-        if (!is_array($block)) {
-            $errors[] = "Block {$index} must be an array";
-            return $errors;
-        }
-
-        // Validate kind
-        $kind = $block['kind'] ?? null;
-        if ($kind === null || $kind === '') {
-            $errors[] = "Block {$index} must have a 'kind' field";
-        } elseif ($kind !== 'markdown') {
-            $errors[] = "Block {$index} kind must be 'markdown' (got '{$kind}')";
-        }
-
-        // Validate source
-        $source = $block['source'] ?? null;
-        if ($source === null || $source === '') {
-            $errors[] = "Block {$index} must have a 'source' field";
-        } elseif (is_string($source)) {
-            if (trim($source) === '') {
-                $errors[] = "Block {$index} source cannot be empty";
-            } elseif (strlen($source) > 100000) {
-                $errors[] = "Block {$index} source must be 100KB or less";
-            }
-        } else {
-            $errors[] = "Block {$index} source must be a string";
-        }
-
-        return $errors;
-    }
-}
-```
-
-### Key Features:
-- **Comprehensive validation**: All fields with appropriate rules
-- **Structured error reporting**: Field-specific errors with context
-- **Sanitization**: Input cleaning and normalization
-- **Flexible validation**: Separate methods for create vs update
-- **Clear error messages**: Specific, actionable error descriptions
-
-### Validation:
-- [ ] Validator class is created
-- [ ] All validation rules are implemented
-- [ ] Error messages are clear and specific
-- [ ] Sanitization handles edge cases
-- [ ] Both create and update validation supported
-
 ---
 
-## Step 5.4: Create Native Validator Adapter
+## Step 5.4: Create Symfony Validator Adapter
 **Time:** 25-30 minutes
 
 ### Instructions:
-1. Create `src/Validation/Adapters/NativeValidatorAdapter.php`:
+1. First, add Symfony Validator to composer.json:
+```bash
+composer require symfony/validator
+```
+
+2. Create `src/Validation/Adapters/SymfonyValidatorAdapter.php`:
 
 ```php
 <?php
@@ -508,234 +315,229 @@ declare(strict_types=1);
 namespace PortableContent\Validation\Adapters;
 
 use PortableContent\Contracts\ContentValidatorInterface;
-use PortableContent\Contracts\ValidationResult;
+use PortableContent\Validation\ValueObjects\ValidationResult;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-final class NativeValidatorAdapter implements ContentValidatorInterface
+final class SymfonyValidatorAdapter implements ContentValidatorInterface
 {
-    private const MAX_TYPE_LENGTH = 50;
-    private const MAX_TITLE_LENGTH = 255;
-    private const MAX_SUMMARY_LENGTH = 1000;
-    private const MAX_BLOCKS = 10;
-    private const MIN_BLOCKS = 1;
-    private const MAX_SOURCE_LENGTH = 100000; // 100KB
+    public function __construct(
+        private readonly ValidatorInterface $validator
+    ) {}
 
     public function validateContentCreation(array $data): ValidationResult
     {
-        $errors = [];
+        $constraints = new Assert\Collection([
+            'fields' => [
+                'type' => [
+                    new Assert\NotBlank(message: 'Type is required'),
+                    new Assert\Length(max: 50, maxMessage: 'Type must be 50 characters or less'),
+                    new Assert\Regex(
+                        pattern: '/^[a-zA-Z0-9_]+$/',
+                        message: 'Type must contain only letters, numbers, and underscores'
+                    ),
+                ],
+                'title' => [
+                    new Assert\Length(max: 255, maxMessage: 'Title must be 255 characters or less'),
+                ],
+                'summary' => [
+                    new Assert\Length(max: 1000, maxMessage: 'Summary must be 1000 characters or less'),
+                ],
+                'blocks' => [
+                    new Assert\NotBlank(message: 'At least one block is required'),
+                    new Assert\Type('array', message: 'Blocks must be an array'),
+                    new Assert\Count(
+                        min: 1,
+                        max: 10,
+                        minMessage: 'At least one block is required',
+                        maxMessage: 'Maximum 10 blocks allowed'
+                    ),
+                    new Assert\All([
+                        new Assert\Collection([
+                            'fields' => [
+                                'kind' => [
+                                    new Assert\NotBlank(message: 'Block kind is required'),
+                                    new Assert\Choice(
+                                        choices: ['markdown'],
+                                        message: 'Block kind must be "markdown"'
+                                    ),
+                                ],
+                                'source' => [
+                                    new Assert\NotBlank(message: 'Block source is required'),
+                                    new Assert\Length(
+                                        max: 100000,
+                                        maxMessage: 'Block source must be 100KB or less'
+                                    ),
+                                    new Assert\Callback([$this, 'validateMarkdownSecurity']),
+                                ],
+                            ],
+                            'allowExtraFields' => false,
+                        ]),
+                    ]),
+                ],
+            ],
+            'allowExtraFields' => false,
+            'allowMissingFields' => ['title', 'summary'], // These are optional
+        ]);
 
-        // Validate type (required for creation)
-        $typeErrors = $this->validateType($data['type'] ?? null, true);
-        if (!empty($typeErrors)) {
-            $errors['type'] = $typeErrors;
-        }
-
-        // Validate title (optional)
-        if (isset($data['title'])) {
-            $titleErrors = $this->validateTitle($data['title']);
-            if (!empty($titleErrors)) {
-                $errors['title'] = $titleErrors;
-            }
-        }
-
-        // Validate summary (optional)
-        if (isset($data['summary'])) {
-            $summaryErrors = $this->validateSummary($data['summary']);
-            if (!empty($summaryErrors)) {
-                $errors['summary'] = $summaryErrors;
-            }
-        }
-
-        // Validate blocks (required for creation)
-        $blocksErrors = $this->validateBlocks($data['blocks'] ?? [], true);
-        if (!empty($blocksErrors)) {
-            $errors['blocks'] = $blocksErrors;
-        }
-
-        return empty($errors) ? ValidationResult::success() : ValidationResult::failure($errors);
+        return $this->validateWithConstraints($data, $constraints);
     }
 
     public function validateContentUpdate(array $data): ValidationResult
     {
-        $errors = [];
+        // For updates, all fields are optional
+        $constraints = new Assert\Collection([
+            'fields' => [
+                'type' => [
+                    new Assert\Length(max: 50, maxMessage: 'Type must be 50 characters or less'),
+                    new Assert\Regex(
+                        pattern: '/^[a-zA-Z0-9_]+$/',
+                        message: 'Type must contain only letters, numbers, and underscores'
+                    ),
+                ],
+                'title' => [
+                    new Assert\Length(max: 255, maxMessage: 'Title must be 255 characters or less'),
+                ],
+                'summary' => [
+                    new Assert\Length(max: 1000, maxMessage: 'Summary must be 1000 characters or less'),
+                ],
+                'blocks' => [
+                    new Assert\Type('array', message: 'Blocks must be an array'),
+                    new Assert\Count(
+                        min: 1,
+                        max: 10,
+                        minMessage: 'At least one block is required',
+                        maxMessage: 'Maximum 10 blocks allowed'
+                    ),
+                    new Assert\All([
+                        new Assert\Collection([
+                            'fields' => [
+                                'kind' => [
+                                    new Assert\NotBlank(message: 'Block kind is required'),
+                                    new Assert\Choice(
+                                        choices: ['markdown'],
+                                        message: 'Block kind must be "markdown"'
+                                    ),
+                                ],
+                                'source' => [
+                                    new Assert\NotBlank(message: 'Block source is required'),
+                                    new Assert\Length(
+                                        max: 100000,
+                                        maxMessage: 'Block source must be 100KB or less'
+                                    ),
+                                    new Assert\Callback([$this, 'validateMarkdownSecurity']),
+                                ],
+                            ],
+                            'allowExtraFields' => false,
+                        ]),
+                    ]),
+                ],
+            ],
+            'allowExtraFields' => false,
+            'allowMissingFields' => ['type', 'title', 'summary', 'blocks'], // All optional for updates
+        ]);
 
-        // Type is optional for updates
-        if (isset($data['type'])) {
-            $typeErrors = $this->validateType($data['type'], false);
-            if (!empty($typeErrors)) {
-                $errors['type'] = $typeErrors;
-            }
-        }
-
-        // Title validation (optional)
-        if (isset($data['title'])) {
-            $titleErrors = $this->validateTitle($data['title']);
-            if (!empty($titleErrors)) {
-                $errors['title'] = $titleErrors;
-            }
-        }
-
-        // Summary validation (optional)
-        if (isset($data['summary'])) {
-            $summaryErrors = $this->validateSummary($data['summary']);
-            if (!empty($summaryErrors)) {
-                $errors['summary'] = $summaryErrors;
-            }
-        }
-
-        // Blocks validation (optional for updates)
-        if (isset($data['blocks'])) {
-            $blocksErrors = $this->validateBlocks($data['blocks'], false);
-            if (!empty($blocksErrors)) {
-                $errors['blocks'] = $blocksErrors;
-            }
-        }
-
-        return empty($errors) ? ValidationResult::success() : ValidationResult::failure($errors);
+        return $this->validateWithConstraints($data, $constraints);
     }
 
     public function validateBlock(array $blockData): ValidationResult
     {
-        $errors = [];
+        $constraints = new Assert\Collection([
+            'fields' => [
+                'kind' => [
+                    new Assert\NotBlank(message: 'Block kind is required'),
+                    new Assert\Choice(
+                        choices: ['markdown'],
+                        message: 'Block kind must be "markdown"'
+                    ),
+                ],
+                'source' => [
+                    new Assert\NotBlank(message: 'Block source is required'),
+                    new Assert\Length(
+                        max: 100000,
+                        maxMessage: 'Block source must be 100KB or less'
+                    ),
+                    new Assert\Callback([$this, 'validateMarkdownSecurity']),
+                ],
+            ],
+            'allowExtraFields' => false,
+        ]);
 
-        // Validate kind
-        $kind = $blockData['kind'] ?? null;
-        if ($kind === null || $kind === '') {
-            $errors['kind'] = ['Block must have a kind field'];
-        } elseif ($kind !== 'markdown') {
-            $errors['kind'] = ["Block kind must be 'markdown' (got '{$kind}')"];
-        }
-
-        // Validate source
-        $sourceErrors = $this->validateSource($blockData['source'] ?? null);
-        if (!empty($sourceErrors)) {
-            $errors['source'] = $sourceErrors;
-        }
-
-        return empty($errors) ? ValidationResult::success() : ValidationResult::failure($errors);
+        return $this->validateWithConstraints($blockData, $constraints);
     }
 
-    private function validateType(?string $type, bool $required): array
+    /**
+     * Custom validation for markdown security
+     */
+    public function validateMarkdownSecurity($value, $context): void
     {
-        $errors = [];
-
-        if ($required && ($type === null || $type === '')) {
-            $errors[] = 'Type is required';
-            return $errors;
+        if (!is_string($value)) {
+            return;
         }
 
-        if ($type !== null && $type !== '') {
-            if (strlen($type) > self::MAX_TYPE_LENGTH) {
-                $errors[] = "Type must be " . self::MAX_TYPE_LENGTH . " characters or less";
+        // Check for script tags
+        if (preg_match('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', $value)) {
+            $context->buildViolation('Script tags are not allowed in markdown content')
+                ->addViolation();
+        }
+
+        // Check UTF-8 encoding
+        if (!mb_check_encoding($value, 'UTF-8')) {
+            $context->buildViolation('Content must be valid UTF-8 encoded text')
+                ->addViolation();
+        }
+    }
+
+    private function validateWithConstraints(array $data, Assert\Collection $constraints): ValidationResult
+    {
+        $violations = $this->validator->validate($data, $constraints);
+
+        if (count($violations) === 0) {
+            return ValidationResult::success();
+        }
+
+        $errors = [];
+        foreach ($violations as $violation) {
+            $propertyPath = $violation->getPropertyPath();
+            $message = $violation->getMessage();
+
+            // Convert property path to field name (e.g., "[blocks][0][source]" -> "blocks")
+            $fieldName = $this->extractFieldName($propertyPath);
+
+            if (!isset($errors[$fieldName])) {
+                $errors[$fieldName] = [];
             }
-
-            if (!preg_match('/^[a-zA-Z0-9_]+$/', $type)) {
-                $errors[] = 'Type must contain only letters, numbers, and underscores';
-            }
+            $errors[$fieldName][] = $message;
         }
 
-        return $errors;
+        return ValidationResult::failure($errors);
     }
 
-    private function validateTitle(?string $title): array
+    private function extractFieldName(string $propertyPath): string
     {
-        $errors = [];
-
-        if ($title !== null && strlen($title) > self::MAX_TITLE_LENGTH) {
-            $errors[] = "Title must be " . self::MAX_TITLE_LENGTH . " characters or less";
+        // Extract the main field name from property path
+        if (preg_match('/^\[([^\]]+)\]/', $propertyPath, $matches)) {
+            return $matches[1];
         }
 
-        return $errors;
-    }
-
-    private function validateSummary(?string $summary): array
-    {
-        $errors = [];
-
-        if ($summary !== null && strlen($summary) > self::MAX_SUMMARY_LENGTH) {
-            $errors[] = "Summary must be " . self::MAX_SUMMARY_LENGTH . " characters or less";
-        }
-
-        return $errors;
-    }
-
-    private function validateBlocks(array $blocks, bool $required): array
-    {
-        $errors = [];
-
-        if ($required && empty($blocks)) {
-            $errors[] = 'At least one block is required';
-            return $errors;
-        }
-
-        if (!empty($blocks) && count($blocks) > self::MAX_BLOCKS) {
-            $errors[] = "Maximum " . self::MAX_BLOCKS . " blocks allowed";
-        }
-
-        foreach ($blocks as $index => $block) {
-            $blockResult = $this->validateBlock($block);
-            if (!$blockResult->isValid()) {
-                foreach ($blockResult->getErrors() as $field => $fieldErrors) {
-                    foreach ($fieldErrors as $error) {
-                        $errors[] = "Block {$index} {$field}: {$error}";
-                    }
-                }
-            }
-        }
-
-        return $errors;
-    }
-
-    private function validateSource(?string $source): array
-    {
-        $errors = [];
-
-        if ($source === null || $source === '') {
-            $errors[] = 'Source is required';
-            return $errors;
-        }
-
-        if (!is_string($source)) {
-            $errors[] = 'Source must be a string';
-            return $errors;
-        }
-
-        $trimmedSource = trim($source);
-        if ($trimmedSource === '') {
-            $errors[] = 'Source cannot be empty';
-        }
-
-        if (strlen($source) > self::MAX_SOURCE_LENGTH) {
-            $errors[] = 'Source must be ' . self::MAX_SOURCE_LENGTH . ' characters or less';
-        }
-
-        // Basic security validation
-        if (preg_match('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', $source)) {
-            $errors[] = 'Script tags are not allowed in markdown content';
-        }
-
-        // UTF-8 validation
-        if (!mb_check_encoding($source, 'UTF-8')) {
-            $errors[] = 'Source must be valid UTF-8 encoded text';
-        }
-
-        return $errors;
+        return $propertyPath ?: 'general';
     }
 }
 ```
 
 ### Key Features:
-- **No external dependencies**: Pure PHP implementation
-- **Complete validation**: Handles all content and block validation rules
-- **Security checks**: Basic protection against script injection and encoding issues
+- **Proven validation library**: Uses Symfony Validator with robust constraint system
+- **Declarative validation**: Clear, readable constraint definitions
+- **Security checks**: Custom validation for script injection and encoding issues
 - **Flexible requirements**: Different validation for creation vs updates
-- **Clear error messages**: Specific, actionable error descriptions
+- **Professional error messages**: Leverages Symfony's mature error handling
 
 ### Validation:
-- [ ] Native validator adapter is created
+- [ ] Symfony validator adapter is created
 - [ ] Implements ContentValidatorInterface
+- [ ] Uses Symfony constraints for robust validation
 - [ ] Handles creation and update validation differently
-- [ ] Includes security and encoding validation
-- [ ] Provides clear, specific error messages
+- [ ] Includes custom security validation callbacks
 
 ---
 
@@ -810,52 +612,11 @@ final class ContentSanitizer implements SanitizerInterface
 
 ---
 
-## Step 5.6: Create Validation Factory and Service
-**Time:** 20 minutes
+## Step 5.6: Create Content Validation Service
+**Time:** 15 minutes
 
 ### Instructions:
-1. Create `src/Validation/ValidatorFactory.php`:
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace PortableContent\Validation;
-
-use InvalidArgumentException;
-use PortableContent\Contracts\ContentValidatorInterface;
-use PortableContent\Validation\Adapters\NativeValidatorAdapter;
-
-final class ValidatorFactory
-{
-    /**
-     * Create a validator instance
-     */
-    public static function create(string $type = 'native'): ContentValidatorInterface
-    {
-        return match($type) {
-            'native' => new NativeValidatorAdapter(),
-            // Future adapters can be added here:
-            // 'respect' => new RespectValidatorAdapter(),
-            // 'symfony' => new SymfonyValidatorAdapter(),
-            // 'laravel' => new LaravelValidatorAdapter(),
-            default => throw new InvalidArgumentException("Unknown validator type: {$type}")
-        };
-    }
-
-    /**
-     * Get available validator types
-     */
-    public static function getAvailableTypes(): array
-    {
-        return ['native'];
-        // Future: return ['native', 'respect', 'symfony', 'laravel'];
-    }
-}
-```
-
-2. Create `src/Validation/ContentValidationService.php`:
+1. Create `src/Validation/ContentValidationService.php`:
 
 ```php
 <?php
@@ -868,15 +629,15 @@ use PortableContent\ContentItem;
 use PortableContent\MarkdownBlock;
 use PortableContent\Contracts\ContentValidatorInterface;
 use PortableContent\Contracts\SanitizerInterface;
-use PortableContent\Contracts\ValidationResult;
+use PortableContent\Validation\ValueObjects\ValidationResult;
 use PortableContent\Exception\ValidationException;
-use PortableContent\Validation\DTOs\ContentCreationRequest;
+use PortableContent\Validation\ValueObjects\ContentCreationRequest;
 
 final class ContentValidationService
 {
     public function __construct(
         private readonly ContentValidatorInterface $validator,
-        private readonly SanitizerInterface $sanitizer = new ContentSanitizer()
+        private readonly SanitizerInterface $sanitizer
     ) {}
 
     /**
@@ -991,16 +752,16 @@ final class ContentValidationService
 ```
 
 ### Key Features:
-- **Factory pattern**: Easy creation of different validator types
+- **Dependency injection**: Users inject their preferred validator and sanitizer
 - **Service orchestration**: Combines sanitization and validation
-- **DTO integration**: Returns type-safe DTOs instead of arrays
+- **Value object integration**: Returns type-safe value objects instead of arrays
 - **Exception handling**: Converts ValidationResult to exceptions
 - **Statistics**: Monitoring and debugging support
 
 ### Validation:
-- [ ] Factory creates validator instances
+- [ ] Service accepts validator via dependency injection
 - [ ] Service combines sanitization and validation
-- [ ] Returns type-safe DTOs
+- [ ] Returns type-safe value objects
 - [ ] Proper exception handling
 - [ ] Statistics for monitoring
 
@@ -1101,14 +862,18 @@ require_once 'vendor/autoload.php';
 use PortableContent\ContentItem;
 use PortableContent\MarkdownBlock;
 use PortableContent\Exception\ValidationException;
-use PortableContent\Validation\ValidatorFactory;
+use PortableContent\Validation\Adapters\SymfonyValidatorAdapter;
 use PortableContent\Validation\ContentValidationService;
+use PortableContent\Validation\ContentSanitizer;
+use Symfony\Component\Validator\Validation;
 
 echo "Testing Validation System...\n\n";
 
-// Create validation service with native adapter
-$validator = ValidatorFactory::create('native');
-$validationService = new ContentValidationService($validator);
+// Create validation service with Symfony adapter
+$symfonyValidator = Validation::createValidator();
+$validator = new SymfonyValidatorAdapter($symfonyValidator);
+$sanitizer = new ContentSanitizer();
+$validationService = new ContentValidationService($validator, $sanitizer);
 
 // Test 1: Valid content creation
 echo "1. Testing valid content creation:\n";
@@ -1125,11 +890,11 @@ $validData = [
 ];
 
 try {
-    $dto = $validationService->validateContentCreation($validData);
+    $request = $validationService->validateContentCreation($validData);
     echo "   SUCCESS: Valid data passed validation\n";
-    echo "   DTO type: '{$dto->type}'\n";
-    echo "   DTO title: '{$dto->title}'\n";
-    echo "   DTO blocks count: " . count($dto->blocks) . "\n\n";
+    echo "   Request type: '{$request->type}'\n";
+    echo "   Request title: '{$request->title}'\n";
+    echo "   Request blocks count: " . count($request->blocks) . "\n\n";
 } catch (ValidationException $e) {
     echo "   ERROR: " . implode(', ', $e->getAllMessages()) . "\n\n";
 }
@@ -1206,12 +971,12 @@ $messyData = [
 ];
 
 try {
-    $dto = $validationService->validateContentCreation($messyData);
+    $request = $validationService->validateContentCreation($messyData);
     echo "   SUCCESS: Data sanitized\n";
     echo "   Original type: '{$messyData['type']}'\n";
-    echo "   Sanitized type: '{$dto->type}'\n";
+    echo "   Sanitized type: '{$request->type}'\n";
     echo "   Original title: '{$messyData['title']}'\n";
-    echo "   Sanitized title: '{$dto->title}'\n\n";
+    echo "   Sanitized title: '{$request->title}'\n\n";
 } catch (ValidationException $e) {
     echo "   ERROR: " . implode(', ', $e->getAllMessages()) . "\n\n";
 }
@@ -1229,13 +994,13 @@ try {
     echo "   ERROR: " . implode(', ', $e->getAllMessages()) . "\n\n";
 }
 
-// Test 7: Test content creation from DTO
-echo "7. Testing content creation from DTO:\n";
+// Test 7: Test content creation from value object
+echo "7. Testing content creation from value object:\n";
 try {
-    $dto = $validationService->validateContentCreation($validData);
-    $content = $validationService->createContentFromDTO($dto);
+    $request = $validationService->validateContentCreation($validData);
+    $content = $validationService->createContentFromDTO($request);
 
-    echo "   SUCCESS: ContentItem created from DTO\n";
+    echo "   SUCCESS: ContentItem created from value object\n";
     echo "   Content ID: {$content->id}\n";
     echo "   Content type: {$content->type}\n";
     echo "   Block count: " . count($content->blocks) . "\n\n";
@@ -1274,18 +1039,29 @@ try {
     echo "   Block errors: " . implode(', ', $e->getFieldErrors('blocks')) . "\n\n";
 }
 
-// Test 10: Test validator factory
-echo "10. Testing validator factory:\n";
-$availableTypes = ValidatorFactory::getAvailableTypes();
-echo "   Available validator types: " . implode(', ', $availableTypes) . "\n";
+// Test 10: Test validator adapter flexibility
+echo "10. Testing validator adapter flexibility:\n";
+try {
+    // Users can create their own validator instances
+    $customValidator = new SymfonyValidatorAdapter($symfonyValidator);
+    $customService = new ContentValidationService($customValidator, $sanitizer);
 
-foreach ($availableTypes as $type) {
-    try {
-        $testValidator = ValidatorFactory::create($type);
-        echo "   SUCCESS: Created {$type} validator\n";
-    } catch (Exception $e) {
-        echo "   ERROR: Failed to create {$type} validator: {$e->getMessage()}\n";
-    }
+    $testData = [
+        'type' => 'note',
+        'title' => 'Custom Validator Test',
+        'blocks' => [
+            [
+                'kind' => 'markdown',
+                'source' => '# Custom Test'
+            ]
+        ]
+    ];
+
+    $request = $customService->validateContentCreation($testData);
+    echo "   SUCCESS: Custom validator adapter works\n";
+    echo "   Validated type: {$request->type}\n";
+} catch (Exception $e) {
+    echo "   ERROR: Custom validator failed: {$e->getMessage()}\n";
 }
 
 echo "\nValidation tests completed!\n";
@@ -1302,9 +1078,9 @@ Testing Validation System...
 
 1. Testing valid content creation:
    SUCCESS: Valid data passed validation
-   DTO type: 'note'
-   DTO title: 'Test Note'
-   DTO blocks count: 1
+   Request type: 'note'
+   Request title: 'Test Note'
+   Request blocks count: 1
 
 2. Testing invalid content (missing type):
    SUCCESS: Validation failed as expected
@@ -1328,8 +1104,8 @@ Testing Validation System...
 6. Testing object validation:
    SUCCESS: Valid ContentItem passed validation
 
-7. Testing content creation from DTO:
-   SUCCESS: ContentItem created from DTO
+7. Testing content creation from value object:
+   SUCCESS: ContentItem created from value object
    Content ID: 12345678-1234-1234-1234-123456789abc
    Content type: note
    Block count: 1
@@ -1346,9 +1122,9 @@ Testing Validation System...
    Title errors: Title must be 255 characters or less
    Block errors: Block 0 kind: Block kind must be 'markdown' (got 'invalid'), Block 0 source: Source is required
 
-10. Testing validator factory:
-   Available validator types: native
-   SUCCESS: Created native validator
+10. Testing validator adapter flexibility:
+   SUCCESS: Custom validator adapter works
+   Validated type: note
 
 Validation tests completed!
 ```
@@ -1369,7 +1145,7 @@ Validation tests completed!
 **Time:** 25-30 minutes
 
 ### Instructions:
-1. Create `tests/Unit/Validation/NativeValidatorAdapterTest.php`:
+1. Create `tests/Unit/Validation/SymfonyValidatorAdapterTest.php`:
 
 ```php
 <?php
@@ -1379,16 +1155,18 @@ declare(strict_types=1);
 namespace PortableContent\Tests\Unit\Validation;
 
 use PortableContent\Tests\TestCase;
-use PortableContent\Validation\Adapters\NativeValidatorAdapter;
+use PortableContent\Validation\Adapters\SymfonyValidatorAdapter;
+use Symfony\Component\Validator\Validation;
 
-final class NativeValidatorAdapterTest extends TestCase
+final class SymfonyValidatorAdapterTest extends TestCase
 {
-    private NativeValidatorAdapter $validator;
+    private SymfonyValidatorAdapter $validator;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->validator = new NativeValidatorAdapter();
+        $symfonyValidator = Validation::createValidator();
+        $this->validator = new SymfonyValidatorAdapter($symfonyValidator);
     }
 
     public function testValidateContentCreationWithValidData(): void
@@ -1587,7 +1365,9 @@ use PortableContent\MarkdownBlock;
 use PortableContent\Tests\TestCase;
 use PortableContent\Exception\ValidationException;
 use PortableContent\Validation\ContentValidationService;
-use PortableContent\Validation\ValidatorFactory;
+use PortableContent\Validation\Adapters\SymfonyValidatorAdapter;
+use PortableContent\Validation\ContentSanitizer;
+use Symfony\Component\Validator\Validation;
 
 final class ContentValidationServiceTest extends TestCase
 {
@@ -1596,8 +1376,10 @@ final class ContentValidationServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $validator = ValidatorFactory::create('native');
-        $this->service = new ContentValidationService($validator);
+        $symfonyValidator = Validation::createValidator();
+        $validator = new SymfonyValidatorAdapter($symfonyValidator);
+        $sanitizer = new ContentSanitizer();
+        $this->service = new ContentValidationService($validator, $sanitizer);
     }
 
     public function testValidateContentCreation(): void
@@ -1613,13 +1395,13 @@ final class ContentValidationServiceTest extends TestCase
             ]
         ];
 
-        $dto = $this->service->validateContentCreation($validData);
+        $request = $this->service->validateContentCreation($validData);
 
-        $this->assertEquals('note', $dto->type);
-        $this->assertEquals('Test Note', $dto->title);
-        $this->assertCount(1, $dto->blocks);
-        $this->assertEquals('markdown', $dto->blocks[0]->kind);
-        $this->assertEquals('# Hello World', $dto->blocks[0]->source);
+        $this->assertEquals('note', $request->type);
+        $this->assertEquals('Test Note', $request->title);
+        $this->assertCount(1, $request->blocks);
+        $this->assertEquals('markdown', $request->blocks[0]->kind);
+        $this->assertEquals('# Hello World', $request->blocks[0]->source);
     }
 
     public function testValidateContentCreationWithInvalidData(): void
@@ -1647,8 +1429,8 @@ final class ContentValidationServiceTest extends TestCase
             ]
         ];
 
-        $dto = $this->service->validateContentCreation($validData);
-        $content = $this->service->createContentFromDTO($dto);
+        $request = $this->service->validateContentCreation($validData);
+        $content = $this->service->createContentFromDTO($request);
 
         $this->assertEquals('note', $content->type);
         $this->assertEquals('Test Note', $content->title);
@@ -1727,52 +1509,9 @@ final class ContentValidationServiceTest extends TestCase
 }
 ```
 
-3. Create `tests/Unit/Validation/ValidatorFactoryTest.php`:
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace PortableContent\Tests\Unit\Validation;
-
-use InvalidArgumentException;
-use PortableContent\Tests\TestCase;
-use PortableContent\Validation\ValidatorFactory;
-use PortableContent\Validation\Adapters\NativeValidatorAdapter;
-
-final class ValidatorFactoryTest extends TestCase
-{
-    public function testCreateNativeValidator(): void
-    {
-        $validator = ValidatorFactory::create('native');
-
-        $this->assertInstanceOf(NativeValidatorAdapter::class, $validator);
-    }
-
-    public function testCreateWithInvalidType(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Unknown validator type: invalid');
-
-        ValidatorFactory::create('invalid');
-    }
-
-    public function testGetAvailableTypes(): void
-    {
-        $types = ValidatorFactory::getAvailableTypes();
-
-        $this->assertIsArray($types);
-        $this->assertContains('native', $types);
-    }
-
-    public function testCreateDefaultValidator(): void
-    {
-        $validator = ValidatorFactory::create();
-
-        $this->assertInstanceOf(NativeValidatorAdapter::class, $validator);
-    }
-}
+3. Run the tests:
+```bash
+vendor/bin/phpunit tests/Unit/Validation/
 ```
 
 4. Run the validation tests:
@@ -1812,12 +1551,16 @@ Add this after the "Repository Usage" section:
 <?php
 
 use PortableContent\Exception\ValidationException;
-use PortableContent\Validation\ValidatorFactory;
+use PortableContent\Validation\Adapters\SymfonyValidatorAdapter;
 use PortableContent\Validation\ContentValidationService;
+use PortableContent\Validation\ContentSanitizer;
+use Symfony\Component\Validator\Validation;
 
-// Create validation service with preferred validator
-$validator = ValidatorFactory::create('native'); // or 'respect', 'symfony', etc.
-$validationService = new ContentValidationService($validator);
+// Create validation service with Symfony validator
+$symfonyValidator = Validation::createValidator();
+$validator = new SymfonyValidatorAdapter($symfonyValidator);
+$sanitizer = new ContentSanitizer();
+$validationService = new ContentValidationService($validator, $sanitizer);
 
 // Raw input data (e.g., from API request)
 $inputData = [
@@ -1833,11 +1576,11 @@ $inputData = [
 ];
 
 try {
-    // Validate and get type-safe DTO
-    $dto = $validationService->validateContentCreation($inputData);
+    // Validate and get type-safe value object
+    $request = $validationService->validateContentCreation($inputData);
 
-    // Create content from DTO
-    $content = $validationService->createContentFromDTO($dto);
+    // Create content from value object
+    $content = $validationService->createContentFromDTO($request);
 
     // Save to repository
     $repository->save($content);
@@ -1858,7 +1601,7 @@ try {
 ### Validation Features
 
 - **Adapter Pattern**: Pluggable validation libraries
-- **Type Safety**: DTOs instead of primitive arrays
+- **Type Safety**: Value objects instead of primitive arrays
 - **Comprehensive validation**: Type, length, format, and content validation
 - **Input sanitization**: Automatic trimming and normalization
 - **Field-specific errors**: Clear error messages for each field
@@ -1889,16 +1632,15 @@ git add .
 git commit -m "Implement adapter-based validation system with DTOs
 
 - Created ContentValidatorInterface and ValidationResult contracts
-- Implemented NativeValidatorAdapter with comprehensive validation rules
+- Implemented SymfonyValidatorAdapter using proven Symfony Validator
 - Added ContentSanitizer for input cleaning and normalization
-- Created ValidatorFactory for pluggable validation libraries
-- Implemented ContentValidationService as high-level facade
-- Added type-safe DTOs (ContentCreationRequest, BlockData)
+- Implemented ContentValidationService with dependency injection
+- Added type-safe value objects (ContentCreationRequest, BlockData, ValidationResult)
 - Created ValidationException in Exception/ folder
 - Added comprehensive unit tests for all components
-- Updated README with adapter pattern usage examples
+- Updated README with dependency injection usage examples
 
-Validation system supports multiple validation libraries while maintaining
+Validation system uses dependency injection for maximum flexibility while maintaining
 clean interfaces and type safety."
 ```
 
@@ -1921,17 +1663,18 @@ git push origin main
 - [ ] ContentValidatorInterface and ValidationResult contracts in Contracts/
 - [ ] ValidationException in Exception/ folder following project structure
 - [ ] Adapter pattern supporting multiple validation libraries
-- [ ] Factory pattern for easy validator creation
+- [ ] Dependency injection for maximum flexibility (no factory lock-in)
 
 ### Validation Components:
-- [ ] NativeValidatorAdapter with comprehensive validation rules
+- [ ] SymfonyValidatorAdapter using proven Symfony Validator library
 - [ ] ContentSanitizer for input cleaning and normalization
 - [ ] ContentValidationService as high-level orchestration layer
-- [ ] ValidatorFactory for pluggable validation libraries
+- [ ] Dependency injection allows users to bring their own adapters
 
-### Data Transfer Objects:
-- [ ] ContentCreationRequest DTO for type-safe validated data
-- [ ] BlockData DTO for structured block information
+### Value Objects:
+- [ ] ContentCreationRequest value object for type-safe validated data
+- [ ] BlockData value object for structured block information
+- [ ] ValidationResult value object for validation outcomes
 - [ ] Factory methods for array conversion
 - [ ] Immutable design preventing data corruption
 
@@ -1944,9 +1687,9 @@ git push origin main
 
 ### Testing and Documentation:
 - [ ] Comprehensive unit tests for all components
-- [ ] Adapter pattern tested with factory
+- [ ] Adapter pattern tested with dependency injection
 - [ ] Error handling thoroughly verified
-- [ ] README updated with adapter pattern usage examples
+- [ ] README updated with dependency injection usage examples
 
 ---
 
@@ -1983,13 +1726,13 @@ You're ready to move on to **Task 6: Testing Setup**, where you'll implement a c
 
 **Adding new validation libraries:**
 - Implement ContentValidatorInterface in a new adapter
-- Add the adapter to ValidatorFactory::create()
-- Update ValidatorFactory::getAvailableTypes()
+- Users inject the adapter directly into ContentValidationService
+- No need to modify any factory or central registry
 
 **Custom validation rules:**
-- Extend NativeValidatorAdapter or create a custom adapter
-- Add new validation methods following the existing pattern
-- Update tests to cover new validation scenarios
+- Create a custom adapter implementing ContentValidatorInterface
+- Or extend SymfonyValidatorAdapter and add custom constraints
+- Users inject their custom adapter into the service
 
 **Performance with large content:**
 - Consider streaming validation for very large content
