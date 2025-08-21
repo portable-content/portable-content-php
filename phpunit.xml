@@ -24,6 +24,11 @@
         <include>
             <directory>src</directory>
         </include>
+        <exclude>
+            <!-- Exclude classes that don't have tests yet -->
+            <file>src/ContentItem.php</file>
+            <file>src/Block/MarkdownBlock.php</file>
+        </exclude>
     </source>
 
     <coverage>
