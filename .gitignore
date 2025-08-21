@@ -4,6 +4,7 @@
 # PHPUnit
 /coverage/
 coverage.xml
+coverage-unit.xml
 .phpunit.cache/
 .phpunit.result.cache
 
