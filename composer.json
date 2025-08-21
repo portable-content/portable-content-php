@@ -42,6 +42,8 @@
         "composer-normalize-fix": "composer normalize",
         "cs-check": "php-cs-fixer fix --dry-run --diff",
         "cs-fix": "php-cs-fixer fix",
+        "migrate": "php bin/migrate.php",
+        "migrate-test": "php bin/migrate.php --memory --info",
         "phpstan": "phpstan analyse",
         "security-audit": "composer audit",
         "test": "phpunit",

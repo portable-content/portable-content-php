@@ -30,6 +30,30 @@ cd portable-content-php
 composer install
 ```
 
+## Database Setup
+
+### Initialize Database
+
+```bash
+# Create database with migrations
+composer migrate
+
+# Or specify custom path
+php bin/migrate.php --path=storage/custom.db
+
+# Test with in-memory database
+composer migrate-test
+```
+
+### Database Schema
+
+The system uses SQLite with two main tables:
+
+- **content_items**: Stores ContentItem metadata (id, type, title, summary, timestamps)
+- **markdown_blocks**: Stores MarkdownBlock content (id, content_id, source, timestamp)
+
+Foreign key constraints ensure data integrity between content and blocks.
+
 ## Usage
 
 *Coming soon - Phase 1A implementation in progress*
@@ -60,10 +84,16 @@ composer composer-normalize-fix # Fix composer.json format
 ## Project Structure
 
 ```
-src/           # Source code
-tests/         # Test files
-storage/       # SQLite database files
-migrations/    # Database schema migrations
+src/                          # Source code
+tests/                        # Test files
+├── Support/                  # Test support utilities
+│   ├── Database/            # SQLite database helpers (for testing)
+│   └── migrations/          # Test database schema migrations
+├── Unit/                    # Unit tests
+└── Integration/             # Integration tests
+storage/                     # SQLite database files (for development)
+bin/                         # CLI tools
+└── migrate.php              # Database migration tool
 ```
 
 ## License
