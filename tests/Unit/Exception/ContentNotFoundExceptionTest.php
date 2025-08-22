@@ -9,6 +9,8 @@ use PortableContent\Exception\ContentNotFoundException;
 
 /**
  * @internal
+ *
+ * @coversNothing
  */
 final class ContentNotFoundExceptionTest extends TestCase
 {

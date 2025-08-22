@@ -19,7 +19,7 @@ final class ValidationException extends \InvalidArgumentException
     }
 
     /**
-     * Get validation errors
+     * Get validation errors.
      *
      * @return array<string, string[]>
      */
@@ -29,7 +29,7 @@ final class ValidationException extends \InvalidArgumentException
     }
 
     /**
-     * Get errors for a specific field
+     * Get errors for a specific field.
      *
      * @return string[]
      */
@@ -39,7 +39,7 @@ final class ValidationException extends \InvalidArgumentException
     }
 
     /**
-     * Check if a specific field has errors
+     * Check if a specific field has errors.
      */
     public function hasFieldErrors(string $field): bool
     {
@@ -47,7 +47,7 @@ final class ValidationException extends \InvalidArgumentException
     }
 
     /**
-     * Get all error messages as a flat array
+     * Get all error messages as a flat array.
      *
      * @return string[]
      */
@@ -59,11 +59,12 @@ final class ValidationException extends \InvalidArgumentException
                 $messages[] = "{$field}: {$error}";
             }
         }
+
         return $messages;
     }
 
     /**
-     * Get total number of errors across all fields
+     * Get total number of errors across all fields.
      */
     public function getErrorCount(): int
     {
@@ -71,7 +72,7 @@ final class ValidationException extends \InvalidArgumentException
     }
 
     /**
-     * Create exception from a single field error
+     * Create exception from a single field error.
      */
     public static function singleError(string $field, string $message): self
     {
@@ -79,7 +80,7 @@ final class ValidationException extends \InvalidArgumentException
     }
 
     /**
-     * Create exception with multiple errors
+     * Create exception with multiple errors.
      *
      * @param array<string, string[]> $errors
      */
@@ -87,7 +88,7 @@ final class ValidationException extends \InvalidArgumentException
     {
         $errorCount = array_sum(array_map('count', $errors));
         $message = "Validation failed with {$errorCount} error(s)";
-        
+
         return new self($errors, $message);
     }
 }

@@ -10,6 +10,8 @@ use PortableContent\Tests\Support\Database\TestDatabaseTrait;
 
 /**
  * @internal
+ *
+ * @coversNothing
  */
 final class DatabaseTest extends TestCase
 {

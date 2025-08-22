@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace PortableContent\Tests\Unit\Exception;
 
-use PortableContent\Tests\TestCase;
 use PortableContent\Exception\ValidationException;
+use PortableContent\Tests\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class ValidationExceptionTest extends TestCase
 {
     public function testConstructorSetsErrorsAndMessage(): void
     {
         $errors = [
             'field1' => ['Error 1', 'Error 2'],
-            'field2' => ['Error 3']
+            'field2' => ['Error 3'],
         ];
 
         $exception = new ValidationException($errors, 'Custom message');
@@ -35,7 +40,7 @@ final class ValidationExceptionTest extends TestCase
     {
         $errors = [
             'email' => ['Invalid email format', 'Email already exists'],
-            'password' => ['Password too short']
+            'password' => ['Password too short'],
         ];
 
         $exception = new ValidationException($errors);
@@ -49,7 +54,7 @@ final class ValidationExceptionTest extends TestCase
     {
         $errors = [
             'username' => ['Required'],
-            'email' => ['Invalid format']
+            'email' => ['Invalid format'],
         ];
 
         $exception = new ValidationException($errors);
@@ -63,7 +68,7 @@ final class ValidationExceptionTest extends TestCase
     {
         $errors = [
             'name' => ['Name is required'],
-            'email' => ['Invalid email', 'Email too long']
+            'email' => ['Invalid email', 'Email too long'],
         ];
 
         $exception = new ValidationException($errors);
@@ -80,7 +85,7 @@ final class ValidationExceptionTest extends TestCase
         $errors = [
             'field1' => ['Error 1', 'Error 2', 'Error 3'],
             'field2' => ['Error 4'],
-            'field3' => ['Error 5', 'Error 6']
+            'field3' => ['Error 5', 'Error 6'],
         ];
 
         $exception = new ValidationException($errors);
@@ -109,7 +114,7 @@ final class ValidationExceptionTest extends TestCase
     {
         $errors = [
             'field1' => ['Error 1', 'Error 2'],
-            'field2' => ['Error 3']
+            'field2' => ['Error 3'],
         ];
 
         $exception = ValidationException::multipleErrors($errors);
