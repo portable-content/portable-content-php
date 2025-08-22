@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace PortableContent\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use PortableContent\Block\MarkdownBlock;
+use PortableContent\Block\Markdown\MarkdownBlock;
 use PortableContent\ContentItem;
 use PortableContent\Exception\InvalidContentException;
 
 /**
  * @internal
- *
- * @coversNothing
  */
 final class ContentItemTest extends TestCase
 {

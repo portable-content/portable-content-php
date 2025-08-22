@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace PortableContent\Block;
+namespace PortableContent\Block\Markdown;
 
-use PortableContent\Contracts\BlockInterface;
+use PortableContent\Contracts\Block\BlockInterface;
 use PortableContent\Exception\InvalidContentException;
 use Ramsey\Uuid\Uuid;
 

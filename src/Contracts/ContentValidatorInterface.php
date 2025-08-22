@@ -22,10 +22,5 @@ interface ContentValidatorInterface
      */
     public function validateContentUpdate(array $data): ValidationResult;
 
-    /**
-     * Validate a single block.
-     *
-     * @param array<string, mixed> $blockData
-     */
-    public function validateBlock(array $blockData): ValidationResult;
+
 }

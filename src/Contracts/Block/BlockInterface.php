@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PortableContent\Contracts;
+namespace PortableContent\Contracts\Block;
 
 interface BlockInterface
 {
