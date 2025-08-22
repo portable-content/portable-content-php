@@ -153,57 +153,59 @@ final class MarkdownBlockSanitizerTest extends TestCase
         $this->assertEquals('', $result['source']);
     }
 
-    public function testSanitizePreservesOtherFields(): void
+    public function testSanitizeOnlyReturnsKindAndSource(): void
     {
         $blockData = [
             'kind' => 'markdown',
             'source' => '# Title',
-            'metadata' => ['key' => 'value'],
-            'custom' => 'field',
+            'metadata' => ['key' => 'value'], // This should not be preserved
+            'custom' => 'field', // This should not be preserved
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
 
         $this->assertEquals('markdown', $result['kind']);
         $this->assertEquals('# Title', $result['source']);
-        $this->assertEquals(['key' => 'value'], $result['metadata']);
-        $this->assertEquals('field', $result['custom']);
+        $this->assertArrayNotHasKey('metadata', $result); // Extra fields not preserved
+        $this->assertArrayNotHasKey('custom', $result); // Extra fields not preserved
+        $this->assertCount(2, $result); // Only kind and source
     }
 
     public function testSanitizeWithMissingKind(): void
     {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Block data must contain a "kind" field');
+
         $blockData = [
             'source' => '# Title',
         ];
 
-        $result = $this->sanitizer->sanitize($blockData);
-
-        $this->assertArrayNotHasKey('kind', $result);
-        $this->assertEquals('# Title', $result['source']);
+        $this->sanitizer->sanitize($blockData);
     }
 
     public function testSanitizeWithMissingSource(): void
     {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Block data must contain a "source" field');
+
         $blockData = [
             'kind' => 'markdown',
         ];
 
-        $result = $this->sanitizer->sanitize($blockData);
-
-        $this->assertEquals('markdown', $result['kind']);
-        $this->assertArrayNotHasKey('source', $result);
+        $this->sanitizer->sanitize($blockData);
     }
 
-    public function testSanitizeConvertsNonStringSource(): void
+    public function testSanitizeWithNonStringSource(): void
     {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Block "source" must be a string');
+
         $blockData = [
             'kind' => 'markdown',
             'source' => 123,
         ];
 
-        $result = $this->sanitizer->sanitize($blockData);
-
-        $this->assertEquals('123', $result['source']);
+        $this->sanitizer->sanitize($blockData);
     }
 
     public function testSanitizeComplexMarkdownDocument(): void

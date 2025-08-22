@@ -4,37 +4,25 @@ declare(strict_types=1);
 
 namespace PortableContent\Block\Markdown;
 
-use PortableContent\Contracts\Block\BlockSanitizerInterface;
+use PortableContent\Block\AbstractBlockSanitizer;
 
-final class MarkdownBlockSanitizer implements BlockSanitizerInterface
+final class MarkdownBlockSanitizer extends AbstractBlockSanitizer
 {
     public function sanitize(array $blockData): array
     {
+        $this->validateBlockData($blockData);
+
         $sanitized = [];
 
-        // Sanitize kind field
-        if (isset($blockData['kind']) && is_string($blockData['kind'])) {
-            $sanitized['kind'] = trim($blockData['kind']);
-        }
+        // Sanitize kind field using base sanitization (validated as string in validateBlockData)
+        $kind = $blockData['kind'];
+        assert(is_string($kind));
+        $sanitized['kind'] = $this->applyBasicKindSanitization($kind);
 
-        // Sanitize source with markdown-specific rules
-        if (isset($blockData['source'])) {
-            $sourceValue = $blockData['source'];
-            if (is_string($sourceValue)) {
-                $sanitized['source'] = $this->sanitizeMarkdownSource($sourceValue);
-            } elseif (is_scalar($sourceValue) || (is_object($sourceValue) && method_exists($sourceValue, '__toString'))) {
-                $sanitized['source'] = $this->sanitizeMarkdownSource((string) $sourceValue);
-            } else {
-                $sanitized['source'] = '';
-            }
-        }
-
-        // Pass through any other fields as-is (for extensibility)
-        foreach ($blockData as $key => $value) {
-            if (!isset($sanitized[$key])) {
-                $sanitized[$key] = $value;
-            }
-        }
+        // Sanitize source with markdown-specific rules (validated as string in validateBlockData)
+        $source = $blockData['source'];
+        assert(is_string($source));
+        $sanitized['source'] = $this->sanitizeMarkdownSource($source);
 
         return $sanitized;
     }
@@ -54,8 +42,8 @@ final class MarkdownBlockSanitizer implements BlockSanitizerInterface
      */
     private function sanitizeMarkdownSource(string $source): string
     {
-        // Normalize line endings to Unix style
-        $source = str_replace(["\r\n", "\r"], "\n", $source);
+        // Apply basic sanitization first (null bytes, control chars, line endings)
+        $source = $this->applyBasicSanitization($source);
 
         // Remove trailing whitespace from each line (but preserve line breaks)
         $lines = explode("\n", $source);

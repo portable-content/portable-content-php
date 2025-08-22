@@ -20,10 +20,14 @@ final class ContentSanitizerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
-        $this->sanitizer = new ContentSanitizer();
-        
-        // Create sanitizer with block registry
+
+        // Create basic block registry for required parameter
+        $basicRegistry = new BlockSanitizerRegistry([
+            new MarkdownBlockSanitizer()
+        ]);
+        $this->sanitizer = new ContentSanitizer($basicRegistry);
+
+        // Create sanitizer with block registry (same as basic for now)
         $blockRegistry = new BlockSanitizerRegistry([
             new MarkdownBlockSanitizer()
         ]);
@@ -145,64 +149,44 @@ final class ContentSanitizerTest extends TestCase
                     'source' => '# Test'
                 ],
                 [
-                    'kind' => 'MARKDOWN', // Should be lowercased
+                    'kind' => 'markdown', // Valid markdown block
                     'source' => '## Test 2'
                 ],
-                'invalid_block', // Should be filtered out
-                [
-                    'kind' => 'invalid-kind!', // Should be cleaned
-                    'source' => 'Test content'
-                ]
+                'invalid_block', // Should be filtered out (not an array)
             ]
         ];
 
         $result = $this->sanitizer->sanitize($data);
 
         $this->assertIsArray($result['blocks']);
-        $this->assertCount(3, $result['blocks']);
+        $this->assertCount(2, $result['blocks']); // Only valid blocks remain
         $this->assertIsArray($result['blocks'][0]);
         $this->assertIsArray($result['blocks'][1]);
-        $this->assertIsArray($result['blocks'][2]);
         $this->assertEquals('markdown', $result['blocks'][0]['kind']);
         $this->assertEquals('markdown', $result['blocks'][1]['kind']);
-        $this->assertEquals('invalidkind', $result['blocks'][2]['kind']);
     }
 
-    public function testSanitizeBlockKind(): void
+    public function testSanitizeBlockKindWithValidMarkdown(): void
     {
-        $testCases = [
-            ['input' => 'markdown', 'expected' => 'markdown'],
-            ['input' => 'MARKDOWN', 'expected' => 'markdown'],
-            ['input' => '  markdown  ', 'expected' => 'markdown'],
-            ['input' => 'mark-down', 'expected' => 'markdown'],
-            ['input' => 'mark_down', 'expected' => 'markdown'],
-            ['input' => 'markdown123', 'expected' => 'markdown123'],
-            ['input' => 'markdown!@#', 'expected' => 'markdown'],
-            ['input' => '', 'expected' => ''],
-            ['input' => null, 'expected' => ''],
-            ['input' => [], 'expected' => ''],
-        ];
+        $data = ['blocks' => [['kind' => 'markdown', 'source' => 'Test content']]];
+        $result = $this->sanitizer->sanitize($data);
 
-        foreach ($testCases as $case) {
-            $data = ['blocks' => [['kind' => $case['input'], 'source' => 'test']]];
-            $result = $this->sanitizer->sanitize($data);
-            if ($case['expected'] === '') {
-                // Empty kind should result in a block without kind field, but with source
-                $this->assertNotEmpty($result['blocks'], "Failed for input: " . json_encode($case['input']));
-                $this->assertIsArray($result['blocks']);
-                $this->assertIsArray($result['blocks'][0], "Failed for input: " . json_encode($case['input']));
-                $this->assertArrayNotHasKey('kind', $result['blocks'][0], "Failed for input: " . json_encode($case['input']));
-                $this->assertArrayHasKey('source', $result['blocks'][0], "Failed for input: " . json_encode($case['input']));
-            } else {
-                $this->assertNotEmpty($result['blocks'], "Failed for input: " . json_encode($case['input']));
-                $this->assertIsArray($result['blocks']);
-                $this->assertIsArray($result['blocks'][0], "Failed for input: " . json_encode($case['input']));
-                $this->assertEquals($case['expected'], $result['blocks'][0]['kind'], "Failed for input: " . json_encode($case['input']));
-            }
-        }
+        $this->assertNotEmpty($result['blocks']);
+        $this->assertIsArray($result['blocks']);
+        $this->assertIsArray($result['blocks'][0]);
+        $this->assertEquals('markdown', $result['blocks'][0]['kind']);
     }
 
-    public function testSanitizeBlockSource(): void
+    public function testSanitizeBlockKindWithInvalidTypes(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        // Test with unknown block type
+        $data = ['blocks' => [['kind' => 'unknown', 'source' => 'Test content']]];
+        $this->sanitizer->sanitize($data);
+    }
+
+    public function testSanitizeBlockSourceWithValidStrings(): void
     {
         $testCases = [
             ['input' => '# Hello World', 'expected' => '# Hello World'],
@@ -210,9 +194,6 @@ final class ContentSanitizerTest extends TestCase
             ['input' => "Test\x00Content", 'expected' => 'TestContent'], // Remove null bytes
             ['input' => "Test\x01Content", 'expected' => 'TestContent'], // Remove control chars
             ['input' => '', 'expected' => ''],
-            ['input' => null, 'expected' => ''],
-            ['input' => 123, 'expected' => '123'],
-            ['input' => [], 'expected' => ''],
         ];
 
         foreach ($testCases as $case) {
@@ -221,14 +202,19 @@ final class ContentSanitizerTest extends TestCase
             $this->assertNotEmpty($result['blocks'], "Failed for input: " . json_encode($case['input']));
             $this->assertIsArray($result['blocks']);
             $this->assertIsArray($result['blocks'][0], "Failed for input: " . json_encode($case['input']));
-            if ($case['input'] === null) {
-                // Null source should result in block without source field
-                $this->assertArrayNotHasKey('source', $result['blocks'][0], "Failed for input: " . json_encode($case['input']));
-            } else {
-                $this->assertArrayHasKey('source', $result['blocks'][0], "Failed for input: " . json_encode($case['input']));
-                $this->assertEquals($case['expected'], $result['blocks'][0]['source'], "Failed for input: " . json_encode($case['input']));
-            }
+            $this->assertArrayHasKey('source', $result['blocks'][0], "Failed for input: " . json_encode($case['input']));
+            $this->assertEquals($case['expected'], $result['blocks'][0]['source'], "Failed for input: " . json_encode($case['input']));
         }
+    }
+
+    public function testSanitizeBlockSourceWithInvalidTypes(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Block "source" must be a string');
+
+        // Test with non-string source
+        $data = ['blocks' => [['kind' => 'markdown', 'source' => 123]]];
+        $this->sanitizer->sanitize($data);
     }
 
     public function testSanitizeWithBlockRegistry(): void
@@ -300,23 +286,24 @@ final class ContentSanitizerTest extends TestCase
     public function testSanitizeInvalidBlocksArray(): void
     {
         $testCases = [
-            ['input' => 'not_an_array', 'expected' => []],
-            ['input' => null, 'expected' => []],
-            ['input' => 123, 'expected' => []],
-            ['input' => [], 'expected' => []],
+            'not_an_array',
+            null,
+            123,
         ];
 
-        foreach ($testCases as $case) {
-            $data = ['blocks' => $case['input']];
+        foreach ($testCases as $invalidInput) {
+            $data = ['blocks' => $invalidInput];
             $result = $this->sanitizer->sanitize($data);
-            if ($case['input'] === null) {
-                // Null blocks should not be included in result
-                $this->assertArrayNotHasKey('blocks', $result, "Failed for input: " . json_encode($case['input']));
-            } else {
-                $this->assertArrayHasKey('blocks', $result, "Failed for input: " . json_encode($case['input']));
-                $this->assertEquals($case['expected'], $result['blocks'], "Failed for input: " . json_encode($case['input']));
-            }
+
+            // Invalid blocks input should not be included in result
+            $this->assertArrayNotHasKey('blocks', $result, "Failed for input: " . json_encode($invalidInput));
         }
+
+        // Empty array should result in empty blocks array
+        $data = ['blocks' => []];
+        $result = $this->sanitizer->sanitize($data);
+        $this->assertArrayHasKey('blocks', $result);
+        $this->assertEquals([], $result['blocks']);
     }
 
     public function testSanitizePreservesValidUnicodeContent(): void

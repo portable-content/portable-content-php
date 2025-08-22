@@ -241,10 +241,6 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
         return $currentResult;
     }
 
-
-
-
-
     /**
      * Add violations to errors array
      *

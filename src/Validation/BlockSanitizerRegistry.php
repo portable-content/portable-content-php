@@ -67,70 +67,70 @@ final class BlockSanitizerRegistry
     }
 
     /**
-     * Sanitize a block using the appropriate sanitizer, or return as-is if no sanitizer exists.
+     * Sanitize multiple blocks using the appropriate sanitizers.
      *
-     * @param array<string, mixed> $blockData
+     * @param array<array<string, mixed>> $blocks Array of block data arrays
      *
-     * @return array<string, mixed>
+     * @return array<array<string, mixed>> Array of sanitized block data arrays
+     *
+     * @throws \InvalidArgumentException if a block type has no registered sanitizer
+     */
+    public function sanitizeBlocks(array $blocks): array
+    {
+        $sanitizedBlocks = [];
+
+        foreach ($blocks as $blockData) {
+            if (!is_array($blockData)) {
+                continue; // Skip invalid block data
+            }
+
+            $sanitizedBlock = $this->sanitizeBlock($blockData);
+            if (!empty($sanitizedBlock)) {
+                $sanitizedBlocks[] = $sanitizedBlock;
+            }
+        }
+
+        return $sanitizedBlocks;
+    }
+
+    /**
+     * Sanitize a single block using the appropriate sanitizer.
+     *
+     * Block data structure:
+     * - 'kind' (string, required): The block type (e.g., 'markdown', 'html', 'code')
+     * - 'source' (string, required): The raw content of the block
+     * - Additional fields may be present and will be passed through to the sanitizer
+     *
+     * Return structure:
+     * - 'kind' (string): The sanitized block type (normalized, lowercase)
+     * - 'source' (string): The sanitized block content
+     * - Additional fields may be returned depending on the specific sanitizer
+     *
+     * @param array<string, mixed> $blockData Block data containing 'kind' and 'source' fields
+     *
+     * @return array<string, mixed> Sanitized block data with same structure
+     *
+     * @throws \InvalidArgumentException if the block type has no registered sanitizer
      */
     public function sanitizeBlock(array $blockData): array
     {
         $blockType = $blockData['kind'] ?? '';
 
-        if (!is_string($blockType) || !$this->hasSanitizer($blockType)) {
-            // No specific sanitizer - apply basic sanitization
-            return $this->basicBlockSanitization($blockData);
+        if (!is_string($blockType)) {
+            throw new \InvalidArgumentException('Block data must contain a valid "kind" field');
+        }
+
+        if (!$this->hasSanitizer($blockType)) {
+            throw new \InvalidArgumentException("No sanitizer registered for block type: {$blockType}");
         }
 
         $sanitizer = $this->getSanitizer($blockType);
-        if (null === $sanitizer) {
-            return $this->basicBlockSanitization($blockData);
+        if ($sanitizer === null) {
+            throw new \InvalidArgumentException("No sanitizer registered for block type: {$blockType}");
         }
 
         return $sanitizer->sanitize($blockData);
     }
 
-    /**
-     * Basic sanitization for blocks without specific sanitizers.
-     *
-     * @param array<string, mixed> $blockData
-     *
-     * @return array<string, mixed>
-     */
-    private function basicBlockSanitization(array $blockData): array
-    {
-        $sanitized = [];
 
-        if (isset($blockData['kind'])) {
-            $kindValue = $blockData['kind'];
-            if (is_string($kindValue)) {
-                $sanitized['kind'] = trim($kindValue);
-            } elseif (is_scalar($kindValue) || (is_object($kindValue) && method_exists($kindValue, '__toString'))) {
-                $sanitized['kind'] = trim((string) $kindValue);
-            } else {
-                $sanitized['kind'] = '';
-            }
-        }
-
-        if (isset($blockData['source'])) {
-            // Basic sanitization - just ensure it's a string
-            $sourceValue = $blockData['source'];
-            if (is_string($sourceValue)) {
-                $sanitized['source'] = $sourceValue;
-            } elseif (is_scalar($sourceValue) || (is_object($sourceValue) && method_exists($sourceValue, '__toString'))) {
-                $sanitized['source'] = (string) $sourceValue;
-            } else {
-                $sanitized['source'] = '';
-            }
-        }
-
-        // Pass through other fields
-        foreach ($blockData as $key => $value) {
-            if (!isset($sanitized[$key])) {
-                $sanitized[$key] = $value;
-            }
-        }
-
-        return $sanitized;
-    }
 }
