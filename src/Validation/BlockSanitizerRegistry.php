@@ -83,7 +83,7 @@ final class BlockSanitizerRegistry
         }
 
         $sanitizer = $this->getSanitizer($blockType);
-        if ($sanitizer === null) {
+        if (null === $sanitizer) {
             return $this->basicBlockSanitization($blockData);
         }
 

@@ -64,19 +64,19 @@ final class MarkdownBlockSanitizer implements BlockSanitizerInterface
 
         // Remove excessive blank lines (more than 2 consecutive)
         $result = preg_replace('/\n{3,}/', "\n\n", $source);
-        $source = $result !== null ? $result : $source;
+        $source = null !== $result ? $result : $source;
 
         // Normalize heading whitespace (ensure single space after #)
         $result = preg_replace('/^(#{1,6})\s+/', '$1 ', $source);
-        $source = $result !== null ? $result : $source;
+        $source = null !== $result ? $result : $source;
         $result = preg_replace('/\n(#{1,6})\s+/', "\n$1 ", $source);
-        $source = $result !== null ? $result : $source;
+        $source = null !== $result ? $result : $source;
 
         // Normalize list item spacing (ensure single space after bullet/number)
         $result = preg_replace('/^(\s*[-*+])\s+/m', '$1 ', $source);
-        $source = $result !== null ? $result : $source;
+        $source = null !== $result ? $result : $source;
         $result = preg_replace('/^(\s*\d+\.)\s+/m', '$1 ', $source);
-        $source = $result !== null ? $result : $source;
+        $source = null !== $result ? $result : $source;
 
         // Trim the entire content (remove leading/trailing whitespace)
         return trim($source);
