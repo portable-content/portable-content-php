@@ -27,7 +27,7 @@ final class BlockValidatorRegistry
     public function register(BlockValidatorInterface $validator): void
     {
         $blockType = $validator->getBlockType();
-        
+
         if (isset($this->validators[$blockType])) {
             throw new \InvalidArgumentException(
                 "Block validator for type '{$blockType}' is already registered"
@@ -55,7 +55,7 @@ final class BlockValidatorRegistry
     }
 
     /**
-     * Get all supported block types
+     * Get all supported block types.
      *
      * @return string[]
      */
@@ -65,7 +65,7 @@ final class BlockValidatorRegistry
     }
 
     /**
-     * Get all registered validators
+     * Get all registered validators.
      *
      * @return BlockValidatorInterface[]
      */

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PortableContent\Tests\Integration;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
-use PortableContent\Block\MarkdownBlock;
+use PortableContent\Block\Markdown\MarkdownBlock;
 use PortableContent\ContentItem;
 
 /**

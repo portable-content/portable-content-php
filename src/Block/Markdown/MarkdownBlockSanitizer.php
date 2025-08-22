@@ -13,13 +13,20 @@ final class MarkdownBlockSanitizer implements BlockSanitizerInterface
         $sanitized = [];
 
         // Sanitize kind field
-        if (isset($blockData['kind'])) {
-            $sanitized['kind'] = trim((string) $blockData['kind']);
+        if (isset($blockData['kind']) && is_string($blockData['kind'])) {
+            $sanitized['kind'] = trim($blockData['kind']);
         }
 
         // Sanitize source with markdown-specific rules
         if (isset($blockData['source'])) {
-            $sanitized['source'] = $this->sanitizeMarkdownSource((string) $blockData['source']);
+            $sourceValue = $blockData['source'];
+            if (is_string($sourceValue)) {
+                $sanitized['source'] = $this->sanitizeMarkdownSource($sourceValue);
+            } elseif (is_scalar($sourceValue) || (is_object($sourceValue) && method_exists($sourceValue, '__toString'))) {
+                $sanitized['source'] = $this->sanitizeMarkdownSource((string) $sourceValue);
+            } else {
+                $sanitized['source'] = '';
+            }
         }
 
         // Pass through any other fields as-is (for extensibility)
@@ -34,7 +41,7 @@ final class MarkdownBlockSanitizer implements BlockSanitizerInterface
 
     public function supports(string $blockType): bool
     {
-        return $blockType === 'markdown';
+        return 'markdown' === $blockType;
     }
 
     public function getBlockType(): string
@@ -43,7 +50,7 @@ final class MarkdownBlockSanitizer implements BlockSanitizerInterface
     }
 
     /**
-     * Sanitize markdown source content with markdown-specific rules
+     * Sanitize markdown source content with markdown-specific rules.
      */
     private function sanitizeMarkdownSource(string $source): string
     {
@@ -56,19 +63,22 @@ final class MarkdownBlockSanitizer implements BlockSanitizerInterface
         $source = implode("\n", $lines);
 
         // Remove excessive blank lines (more than 2 consecutive)
-        $source = preg_replace('/\n{3,}/', "\n\n", $source);
+        $result = preg_replace('/\n{3,}/', "\n\n", $source);
+        $source = $result !== null ? $result : $source;
 
         // Normalize heading whitespace (ensure single space after #)
-        $source = preg_replace('/^(#{1,6})\s+/', '$1 ', $source);
-        $source = preg_replace('/\n(#{1,6})\s+/', "\n$1 ", $source);
+        $result = preg_replace('/^(#{1,6})\s+/', '$1 ', $source);
+        $source = $result !== null ? $result : $source;
+        $result = preg_replace('/\n(#{1,6})\s+/', "\n$1 ", $source);
+        $source = $result !== null ? $result : $source;
 
         // Normalize list item spacing (ensure single space after bullet/number)
-        $source = preg_replace('/^(\s*[-*+])\s+/m', '$1 ', $source);
-        $source = preg_replace('/^(\s*\d+\.)\s+/m', '$1 ', $source);
+        $result = preg_replace('/^(\s*[-*+])\s+/m', '$1 ', $source);
+        $source = $result !== null ? $result : $source;
+        $result = preg_replace('/^(\s*\d+\.)\s+/m', '$1 ', $source);
+        $source = $result !== null ? $result : $source;
 
         // Trim the entire content (remove leading/trailing whitespace)
-        $source = trim($source);
-
-        return $source;
+        return trim($source);
     }
 }

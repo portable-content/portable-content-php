@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace PortableContent\Tests\Integration\Repository;
 
 use PDO;
-use PortableContent\Block\MarkdownBlock;
+use PortableContent\Block\Markdown\MarkdownBlock;
 use PortableContent\ContentItem;
-use PortableContent\Contracts\BlockInterface;
+use PortableContent\Contracts\Block\BlockInterface;
 use PortableContent\Exception\RepositoryException;
 use PortableContent\Tests\Integration\IntegrationTestCase;
 use PortableContent\Tests\Support\Database\Database;

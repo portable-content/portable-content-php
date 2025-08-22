@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace PortableContent\Tests\Unit\Validation;
 
+use PortableContent\Contracts\Block\BlockSanitizerInterface;
 use PortableContent\Tests\TestCase;
 use PortableContent\Validation\BlockSanitizerRegistry;
-use PortableContent\Contracts\Block\BlockSanitizerInterface;
 
 /**
  * @internal
+ *
+ * @coversNothing
  */
 final class BlockSanitizerRegistryTest extends TestCase
 {
@@ -19,28 +21,31 @@ final class BlockSanitizerRegistryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->mockSanitizer = new class implements BlockSanitizerInterface {
-            public function sanitize(array $blockData): array {
+            public function sanitize(array $blockData): array
+            {
                 return ['kind' => 'test', 'source' => 'sanitized'];
             }
-            
-            public function supports(string $blockType): bool {
-                return $blockType === 'test';
+
+            public function supports(string $blockType): bool
+            {
+                return 'test' === $blockType;
             }
-            
-            public function getBlockType(): string {
+
+            public function getBlockType(): string
+            {
                 return 'test';
             }
         };
-        
+
         $this->registry = new BlockSanitizerRegistry();
     }
 
     public function testConstructorWithSanitizers(): void
     {
         $registry = new BlockSanitizerRegistry([$this->mockSanitizer]);
-        
+
         $this->assertTrue($registry->hasSanitizer('test'));
         $this->assertSame($this->mockSanitizer, $registry->getSanitizer('test'));
     }
@@ -48,7 +53,7 @@ final class BlockSanitizerRegistryTest extends TestCase
     public function testConstructorWithEmptyArray(): void
     {
         $registry = new BlockSanitizerRegistry([]);
-        
+
         $this->assertEmpty($registry->getSupportedBlockTypes());
         $this->assertEmpty($registry->getAllSanitizers());
     }
@@ -56,7 +61,7 @@ final class BlockSanitizerRegistryTest extends TestCase
     public function testRegisterSanitizer(): void
     {
         $this->registry->register($this->mockSanitizer);
-        
+
         $this->assertTrue($this->registry->hasSanitizer('test'));
         $this->assertSame($this->mockSanitizer, $this->registry->getSanitizer('test'));
     }
@@ -64,10 +69,10 @@ final class BlockSanitizerRegistryTest extends TestCase
     public function testRegisterDuplicateSanitizerThrowsException(): void
     {
         $this->registry->register($this->mockSanitizer);
-        
+
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Block sanitizer for type 'test' is already registered");
-        
+
         $this->registry->register($this->mockSanitizer);
     }
 
@@ -84,7 +89,7 @@ final class BlockSanitizerRegistryTest extends TestCase
     public function testHasSanitizerReturnsTrueForRegisteredType(): void
     {
         $this->registry->register($this->mockSanitizer);
-        
+
         $this->assertTrue($this->registry->hasSanitizer('test'));
     }
 
@@ -92,12 +97,12 @@ final class BlockSanitizerRegistryTest extends TestCase
     {
         $sanitizer1 = $this->createMockSanitizer('markdown');
         $sanitizer2 = $this->createMockSanitizer('code');
-        
+
         $this->registry->register($sanitizer1);
         $this->registry->register($sanitizer2);
-        
+
         $supportedTypes = $this->registry->getSupportedBlockTypes();
-        
+
         $this->assertCount(2, $supportedTypes);
         $this->assertContains('markdown', $supportedTypes);
         $this->assertContains('code', $supportedTypes);
@@ -107,12 +112,12 @@ final class BlockSanitizerRegistryTest extends TestCase
     {
         $sanitizer1 = $this->createMockSanitizer('markdown');
         $sanitizer2 = $this->createMockSanitizer('code');
-        
+
         $this->registry->register($sanitizer1);
         $this->registry->register($sanitizer2);
-        
+
         $sanitizers = $this->registry->getAllSanitizers();
-        
+
         $this->assertCount(2, $sanitizers);
         $this->assertContains($sanitizer1, $sanitizers);
         $this->assertContains($sanitizer2, $sanitizers);
@@ -122,10 +127,10 @@ final class BlockSanitizerRegistryTest extends TestCase
     {
         $sanitizer = $this->createMockSanitizer('markdown');
         $this->registry->register($sanitizer);
-        
+
         $blockData = ['kind' => 'markdown', 'source' => 'original'];
         $result = $this->registry->sanitizeBlock($blockData);
-        
+
         $this->assertEquals(['kind' => 'markdown', 'source' => 'sanitized-markdown'], $result);
     }
 
@@ -133,7 +138,7 @@ final class BlockSanitizerRegistryTest extends TestCase
     {
         $blockData = ['kind' => 'unknown', 'source' => '  original  '];
         $result = $this->registry->sanitizeBlock($blockData);
-        
+
         // Should apply basic sanitization
         $this->assertEquals(['kind' => 'unknown', 'source' => '  original  '], $result);
     }
@@ -142,7 +147,7 @@ final class BlockSanitizerRegistryTest extends TestCase
     {
         $blockData = ['source' => 'content'];
         $result = $this->registry->sanitizeBlock($blockData);
-        
+
         // Should apply basic sanitization
         $this->assertEquals(['source' => 'content'], $result);
     }
@@ -151,7 +156,7 @@ final class BlockSanitizerRegistryTest extends TestCase
     {
         $blockData = ['kind' => 123, 'source' => 'content'];
         $result = $this->registry->sanitizeBlock($blockData);
-        
+
         // Should apply basic sanitization
         $this->assertEquals(['kind' => '123', 'source' => 'content'], $result);
     }
@@ -160,7 +165,7 @@ final class BlockSanitizerRegistryTest extends TestCase
     {
         $blockData = ['kind' => '  markdown  ', 'source' => 'content'];
         $result = $this->registry->sanitizeBlock($blockData);
-        
+
         $this->assertEquals(['kind' => 'markdown', 'source' => 'content'], $result);
     }
 
@@ -168,7 +173,7 @@ final class BlockSanitizerRegistryTest extends TestCase
     {
         $blockData = ['kind' => 'test', 'source' => 123];
         $result = $this->registry->sanitizeBlock($blockData);
-        
+
         $this->assertEquals(['kind' => 'test', 'source' => '123'], $result);
     }
 
@@ -178,15 +183,15 @@ final class BlockSanitizerRegistryTest extends TestCase
             'kind' => 'test',
             'source' => 'content',
             'metadata' => ['key' => 'value'],
-            'custom' => 'field'
+            'custom' => 'field',
         ];
         $result = $this->registry->sanitizeBlock($blockData);
-        
+
         $this->assertEquals([
             'kind' => 'test',
             'source' => 'content',
             'metadata' => ['key' => 'value'],
-            'custom' => 'field'
+            'custom' => 'field',
         ], $result);
     }
 
@@ -194,16 +199,19 @@ final class BlockSanitizerRegistryTest extends TestCase
     {
         return new class($blockType) implements BlockSanitizerInterface {
             public function __construct(private string $blockType) {}
-            
-            public function sanitize(array $blockData): array {
+
+            public function sanitize(array $blockData): array
+            {
                 return ['kind' => $this->blockType, 'source' => "sanitized-{$this->blockType}"];
             }
-            
-            public function supports(string $blockType): bool {
+
+            public function supports(string $blockType): bool
+            {
                 return $blockType === $this->blockType;
             }
-            
-            public function getBlockType(): string {
+
+            public function getBlockType(): string
+            {
                 return $this->blockType;
             }
         };

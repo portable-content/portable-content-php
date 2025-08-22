@@ -21,6 +21,4 @@ interface ContentValidatorInterface
      * @param array<string, mixed> $data
      */
     public function validateContentUpdate(array $data): ValidationResult;
-
-
 }

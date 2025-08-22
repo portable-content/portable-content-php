@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace PortableContent\Tests\Unit\Block\Markdown;
 
-use PortableContent\Tests\TestCase;
 use PortableContent\Block\Markdown\MarkdownBlockValidator;
+use PortableContent\Tests\TestCase;
 
 /**
  * @internal
+ *
+ * @coversNothing
  */
 final class MarkdownBlockValidatorTest extends TestCase
 {
@@ -36,7 +38,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => '# Hello World\n\nThis is a test.'
+            'source' => '# Hello World\n\nThis is a test.',
         ];
 
         $result = $this->validator->validate($blockData);
@@ -48,7 +50,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     public function testValidateWithMissingKind(): void
     {
         $blockData = [
-            'source' => '# Hello World'
+            'source' => '# Hello World',
         ];
 
         $result = $this->validator->validate($blockData);
@@ -62,7 +64,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     {
         $blockData = [
             'kind' => 'code',
-            'source' => '# Hello World'
+            'source' => '# Hello World',
         ];
 
         $result = $this->validator->validate($blockData);
@@ -75,7 +77,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     public function testValidateWithMissingSource(): void
     {
         $blockData = [
-            'kind' => 'markdown'
+            'kind' => 'markdown',
         ];
 
         $result = $this->validator->validate($blockData);
@@ -89,7 +91,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => 123
+            'source' => 123,
         ];
 
         $result = $this->validator->validate($blockData);
@@ -103,7 +105,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => '   '
+            'source' => '   ',
         ];
 
         $result = $this->validator->validate($blockData);
@@ -117,7 +119,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => str_repeat('a', 100001) // Exceeds 100KB limit
+            'source' => str_repeat('a', 100001), // Exceeds 100KB limit
         ];
 
         $result = $this->validator->validate($blockData);
@@ -133,7 +135,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "# Test\n\n```php\necho 'hello';\n// Missing closing backticks"
+            'source' => "# Test\n\n```php\necho 'hello';\n// Missing closing backticks",
         ];
 
         $result = $this->validator->validate($blockData);
@@ -147,7 +149,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "# Test\n\n```php\necho 'hello';\n```\n\nMore content."
+            'source' => "# Test\n\n```php\necho 'hello';\n```\n\nMore content.",
         ];
 
         $result = $this->validator->validate($blockData);
@@ -159,7 +161,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "# Test\n\n[Link](javascript:alert('xss'))"
+            'source' => "# Test\n\n[Link](javascript:alert('xss'))",
         ];
 
         $result = $this->validator->validate($blockData);
@@ -173,7 +175,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "# Test\n\n[HTTP Link](https://example.com)\n[Relative](/path)\n[Anchor](#section)"
+            'source' => "# Test\n\n[HTTP Link](https://example.com)\n[Relative](/path)\n[Anchor](#section)",
         ];
 
         $result = $this->validator->validate($blockData);
@@ -185,7 +187,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     {
         $blockData = [
             'kind' => 'code', // Wrong kind
-            'source' => "```\ncode\n[bad link](bad:url)" // Unbalanced code blocks + bad link
+            'source' => "```\ncode\n[bad link](bad:url)", // Unbalanced code blocks + bad link
         ];
 
         $result = $this->validator->validate($blockData);
@@ -200,7 +202,7 @@ final class MarkdownBlockValidatorTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => 'a' // Single character
+            'source' => 'a', // Single character
         ];
 
         $result = $this->validator->validate($blockData);

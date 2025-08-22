@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PortableContent;
 
-use PortableContent\Contracts\BlockInterface;
+use PortableContent\Contracts\Block\BlockInterface;
 use PortableContent\Exception\InvalidContentException;
 use Ramsey\Uuid\Uuid;
 

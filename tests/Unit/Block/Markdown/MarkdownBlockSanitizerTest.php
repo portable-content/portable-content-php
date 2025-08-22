@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace PortableContent\Tests\Unit\Block\Markdown;
 
-use PortableContent\Tests\TestCase;
 use PortableContent\Block\Markdown\MarkdownBlockSanitizer;
+use PortableContent\Tests\TestCase;
 
 /**
  * @internal
+ *
+ * @coversNothing
  */
 final class MarkdownBlockSanitizerTest extends TestCase
 {
@@ -36,7 +38,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => '  markdown  ',
-            'source' => 'content'
+            'source' => 'content',
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -48,7 +50,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "Line 1\r\nLine 2\rLine 3\nLine 4"
+            'source' => "Line 1\r\nLine 2\rLine 3\nLine 4",
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -60,7 +62,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "Line 1   \nLine 2\t\nLine 3 "
+            'source' => "Line 1   \nLine 2\t\nLine 3 ",
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -72,7 +74,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "Line 1\n\n\n\n\nLine 2"
+            'source' => "Line 1\n\n\n\n\nLine 2",
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -84,7 +86,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "#    Title 1\n##\t\tTitle 2\n###   Title 3"
+            'source' => "#    Title 1\n##\t\tTitle 2\n###   Title 3",
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -96,7 +98,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "-    Item 1\n*\t\tItem 2\n+   Item 3\n1.\t\tNumbered 1\n2.    Numbered 2"
+            'source' => "-    Item 1\n*\t\tItem 2\n+   Item 3\n1.\t\tNumbered 1\n2.    Numbered 2",
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -108,7 +110,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "\n\n  # Title\n\nContent\n\n  "
+            'source' => "\n\n  # Title\n\nContent\n\n  ",
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -120,7 +122,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "    Code block\n        Indented more\n    Back to original"
+            'source' => "    Code block\n        Indented more\n    Back to original",
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -133,7 +135,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => ''
+            'source' => '',
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -145,7 +147,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "   \n\t\n   "
+            'source' => "   \n\t\n   ",
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -159,7 +161,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
             'kind' => 'markdown',
             'source' => '# Title',
             'metadata' => ['key' => 'value'],
-            'custom' => 'field'
+            'custom' => 'field',
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -173,7 +175,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     public function testSanitizeWithMissingKind(): void
     {
         $blockData = [
-            'source' => '# Title'
+            'source' => '# Title',
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -185,7 +187,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     public function testSanitizeWithMissingSource(): void
     {
         $blockData = [
-            'kind' => 'markdown'
+            'kind' => 'markdown',
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -198,7 +200,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => 123
+            'source' => 123,
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -210,7 +212,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "\n\n#    Main Title   \n\n\n\n##\t\tSubtitle\n\n-    Item 1   \n*\t\tItem 2\n\n\n```php\necho 'code';\n```\n\n\n"
+            'source' => "\n\n#    Main Title   \n\n\n\n##\t\tSubtitle\n\n-    Item 1   \n*\t\tItem 2\n\n\n```php\necho 'code';\n```\n\n\n",
         ];
 
         $result = $this->sanitizer->sanitize($blockData);
@@ -223,7 +225,7 @@ final class MarkdownBlockSanitizerTest extends TestCase
     {
         $blockData = [
             'kind' => 'markdown',
-            'source' => "```php\n    function test() {\n        return 'hello';\n    }\n```"
+            'source' => "```php\n    function test() {\n        return 'hello';\n    }\n```",
         ];
 
         $result = $this->sanitizer->sanitize($blockData);

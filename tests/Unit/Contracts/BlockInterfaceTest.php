@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace PortableContent\Tests\Unit\Contracts;
 
 use PHPUnit\Framework\TestCase;
-use PortableContent\Block\MarkdownBlock;
-use PortableContent\Contracts\BlockInterface;
+use PortableContent\Block\Markdown\MarkdownBlock;
+use PortableContent\Contracts\Block\BlockInterface;
 
 /**
  * @internal

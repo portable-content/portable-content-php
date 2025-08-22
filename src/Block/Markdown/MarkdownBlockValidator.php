@@ -19,7 +19,7 @@ final class MarkdownBlockValidator implements BlockValidatorInterface
         // Validate required fields
         if (!isset($blockData['kind'])) {
             $errors['kind'][] = 'Block kind is required';
-        } elseif ($blockData['kind'] !== 'markdown') {
+        } elseif ('markdown' !== $blockData['kind']) {
             $errors['kind'][] = 'This validator only handles markdown blocks';
         }
 
@@ -27,7 +27,7 @@ final class MarkdownBlockValidator implements BlockValidatorInterface
             $errors['source'][] = 'Block source is required';
         } else {
             $source = $blockData['source'];
-            
+
             // Validate source is string
             if (!is_string($source)) {
                 $errors['source'][] = 'Block source must be a string';
@@ -37,7 +37,7 @@ final class MarkdownBlockValidator implements BlockValidatorInterface
                 if (strlen($trimmedSource) < self::MIN_CONTENT_LENGTH) {
                     $errors['source'][] = 'Block source cannot be empty after trimming';
                 }
-                
+
                 if (strlen($source) > self::MAX_CONTENT_LENGTH) {
                     $errors['source'][] = sprintf(
                         'Block source cannot exceed %d characters (got %d)',
@@ -56,7 +56,7 @@ final class MarkdownBlockValidator implements BlockValidatorInterface
 
     public function supports(string $blockType): bool
     {
-        return $blockType === 'markdown';
+        return 'markdown' === $blockType;
     }
 
     public function getBlockType(): string
@@ -65,17 +65,17 @@ final class MarkdownBlockValidator implements BlockValidatorInterface
     }
 
     /**
-     * Perform basic markdown syntax validation
+     * Perform basic markdown syntax validation.
      *
      * @param array<string, string[]> $errors
      */
     private function validateMarkdownSyntax(string $source, array &$errors): void
     {
         // Example validations - could be much more sophisticated
-        
+
         // Check for balanced code blocks
         $codeBlockCount = substr_count($source, '```');
-        if ($codeBlockCount % 2 !== 0) {
+        if (0 !== $codeBlockCount % 2) {
             $errors['source'][] = 'Unbalanced code blocks (``` markers)';
         }
 
@@ -86,7 +86,7 @@ final class MarkdownBlockValidator implements BlockValidatorInterface
 
         // Could add more validations:
         // - Image syntax validation
-        // - Table syntax validation  
+        // - Table syntax validation
         // - Header hierarchy validation
         // - etc.
     }

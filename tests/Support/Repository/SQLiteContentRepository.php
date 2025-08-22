@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PortableContent\Tests\Support\Repository;
 
-use PortableContent\Block\MarkdownBlock;
+use PortableContent\Block\Markdown\MarkdownBlock;
 use PortableContent\ContentItem;
 use PortableContent\Contracts\ContentRepositoryInterface;
 use PortableContent\Exception\RepositoryException;
