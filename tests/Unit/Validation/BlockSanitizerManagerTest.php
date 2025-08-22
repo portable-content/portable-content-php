@@ -6,14 +6,14 @@ namespace PortableContent\Tests\Unit\Validation;
 
 use PortableContent\Contracts\Block\BlockSanitizerInterface;
 use PortableContent\Tests\TestCase;
-use PortableContent\Validation\BlockSanitizerRegistry;
+use PortableContent\Validation\BlockSanitizerManager;
 
 /**
  * @internal
  */
-final class BlockSanitizerRegistryTest extends TestCase
+final class BlockSanitizerManagerTest extends TestCase
 {
-    private BlockSanitizerRegistry $registry;
+    private BlockSanitizerManager $manager;
     private BlockSanitizerInterface $mockSanitizer;
 
     protected function setUp(): void
@@ -37,58 +37,58 @@ final class BlockSanitizerRegistryTest extends TestCase
             }
         };
 
-        $this->registry = new BlockSanitizerRegistry();
+        $this->manager = new BlockSanitizerManager();
     }
 
     public function testConstructorWithSanitizers(): void
     {
-        $registry = new BlockSanitizerRegistry([$this->mockSanitizer]);
+        $manager = new BlockSanitizerManager([$this->mockSanitizer]);
 
-        $this->assertTrue($registry->hasSanitizer('test'));
-        $this->assertSame($this->mockSanitizer, $registry->getSanitizer('test'));
+        $this->assertTrue($manager->hasSanitizer('test'));
+        $this->assertSame($this->mockSanitizer, $manager->getSanitizer('test'));
     }
 
     public function testConstructorWithEmptyArray(): void
     {
-        $registry = new BlockSanitizerRegistry([]);
+        $manager = new BlockSanitizerManager([]);
 
-        $this->assertEmpty($registry->getSupportedBlockTypes());
-        $this->assertEmpty($registry->getAllSanitizers());
+        $this->assertEmpty($manager->getSupportedBlockTypes());
+        $this->assertEmpty($manager->getAllSanitizers());
     }
 
     public function testRegisterSanitizer(): void
     {
-        $this->registry->register($this->mockSanitizer);
+        $this->manager->register($this->mockSanitizer);
 
-        $this->assertTrue($this->registry->hasSanitizer('test'));
-        $this->assertSame($this->mockSanitizer, $this->registry->getSanitizer('test'));
+        $this->assertTrue($this->manager->hasSanitizer('test'));
+        $this->assertSame($this->mockSanitizer, $this->manager->getSanitizer('test'));
     }
 
     public function testRegisterDuplicateSanitizerThrowsException(): void
     {
-        $this->registry->register($this->mockSanitizer);
+        $this->manager->register($this->mockSanitizer);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Block sanitizer for type 'test' is already registered");
 
-        $this->registry->register($this->mockSanitizer);
+        $this->manager->register($this->mockSanitizer);
     }
 
     public function testGetSanitizerReturnsNullForUnregisteredType(): void
     {
-        $this->assertNull($this->registry->getSanitizer('nonexistent'));
+        $this->assertNull($this->manager->getSanitizer('nonexistent'));
     }
 
     public function testHasSanitizerReturnsFalseForUnregisteredType(): void
     {
-        $this->assertFalse($this->registry->hasSanitizer('nonexistent'));
+        $this->assertFalse($this->manager->hasSanitizer('nonexistent'));
     }
 
     public function testHasSanitizerReturnsTrueForRegisteredType(): void
     {
-        $this->registry->register($this->mockSanitizer);
+        $this->manager->register($this->mockSanitizer);
 
-        $this->assertTrue($this->registry->hasSanitizer('test'));
+        $this->assertTrue($this->manager->hasSanitizer('test'));
     }
 
     public function testGetSupportedBlockTypes(): void
@@ -96,10 +96,10 @@ final class BlockSanitizerRegistryTest extends TestCase
         $sanitizer1 = $this->createMockSanitizer('markdown');
         $sanitizer2 = $this->createMockSanitizer('code');
 
-        $this->registry->register($sanitizer1);
-        $this->registry->register($sanitizer2);
+        $this->manager->register($sanitizer1);
+        $this->manager->register($sanitizer2);
 
-        $supportedTypes = $this->registry->getSupportedBlockTypes();
+        $supportedTypes = $this->manager->getSupportedBlockTypes();
 
         $this->assertCount(2, $supportedTypes);
         $this->assertContains('markdown', $supportedTypes);
@@ -111,10 +111,10 @@ final class BlockSanitizerRegistryTest extends TestCase
         $sanitizer1 = $this->createMockSanitizer('markdown');
         $sanitizer2 = $this->createMockSanitizer('code');
 
-        $this->registry->register($sanitizer1);
-        $this->registry->register($sanitizer2);
+        $this->manager->register($sanitizer1);
+        $this->manager->register($sanitizer2);
 
-        $sanitizers = $this->registry->getAllSanitizers();
+        $sanitizers = $this->manager->getAllSanitizers();
 
         $this->assertCount(2, $sanitizers);
         $this->assertContains($sanitizer1, $sanitizers);
@@ -123,7 +123,7 @@ final class BlockSanitizerRegistryTest extends TestCase
 
     public function testSanitizeBlocks(): void
     {
-        $this->registry->register($this->mockSanitizer);
+        $this->manager->register($this->mockSanitizer);
 
         $blocks = [
             [
@@ -136,7 +136,7 @@ final class BlockSanitizerRegistryTest extends TestCase
             ]
         ];
 
-        $result = $this->registry->sanitizeBlocks($blocks);
+        $result = $this->manager->sanitizeBlocks($blocks);
 
         $this->assertCount(2, $result);
         $this->assertEquals('test', $result[0]['kind']);
@@ -145,33 +145,27 @@ final class BlockSanitizerRegistryTest extends TestCase
         $this->assertEquals('sanitized', $result[1]['source']); // Mock returns fixed 'sanitized'
     }
 
-    public function testSanitizeBlocksSkipsInvalidBlocks(): void
+    public function testSanitizeBlocksWithInvalidBlockData(): void
     {
-        $this->registry->register($this->mockSanitizer);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid block data at index 1: expected array, got string');
 
-        $validBlocks = [
+        $this->manager->register($this->mockSanitizer);
+
+        $blocksWithInvalidData = [
             [
                 'kind' => 'test',
                 'source' => 'Valid content'
             ],
+            'invalid_block', // This should cause an exception
             [
                 'kind' => 'test',
                 'source' => 'Another valid content'
             ]
         ];
 
-        // Add invalid block to test filtering
-        $mixedBlocks = $validBlocks;
-        $mixedBlocks[] = 'invalid_block'; // This will be filtered out
-
-        /** @var array<array<string, mixed>> $blocksForSanitization */
-        $blocksForSanitization = $validBlocks; // Only pass valid blocks to avoid type issues
-
-        $result = $this->registry->sanitizeBlocks($blocksForSanitization);
-
-        $this->assertCount(2, $result); // Both valid blocks processed
-        $this->assertEquals('sanitized', $result[0]['source']); // Mock returns fixed 'sanitized'
-        $this->assertEquals('sanitized', $result[1]['source']); // Mock returns fixed 'sanitized'
+        // @phpstan-ignore-next-line - Intentionally passing invalid data to test exception
+        $this->manager->sanitizeBlocks($blocksWithInvalidData);
     }
 
     public function testSanitizeBlocksWithUnknownType(): void
@@ -186,16 +180,16 @@ final class BlockSanitizerRegistryTest extends TestCase
             ]
         ];
 
-        $this->registry->sanitizeBlocks($blocks);
+        $this->manager->sanitizeBlocks($blocks);
     }
 
     public function testSanitizeBlockWithRegisteredSanitizer(): void
     {
         $sanitizer = $this->createMockSanitizer('markdown');
-        $this->registry->register($sanitizer);
+        $this->manager->register($sanitizer);
 
         $blockData = ['kind' => 'markdown', 'source' => 'original'];
-        $result = $this->registry->sanitizeBlock($blockData);
+        $result = $this->manager->sanitizeBlock($blockData);
 
         $this->assertEquals(['kind' => 'markdown', 'source' => 'sanitized-markdown'], $result);
     }
@@ -206,7 +200,7 @@ final class BlockSanitizerRegistryTest extends TestCase
         $this->expectExceptionMessage('No sanitizer registered for block type: unknown');
 
         $blockData = ['kind' => 'unknown', 'source' => 'content'];
-        $this->registry->sanitizeBlock($blockData);
+        $this->manager->sanitizeBlock($blockData);
     }
 
     public function testSanitizeBlockWithMissingKind(): void
@@ -215,7 +209,7 @@ final class BlockSanitizerRegistryTest extends TestCase
         $this->expectExceptionMessage('No sanitizer registered for block type:'); // Empty string block type
 
         $blockData = ['source' => 'content'];
-        $this->registry->sanitizeBlock($blockData);
+        $this->manager->sanitizeBlock($blockData);
     }
 
     public function testSanitizeBlockWithNonStringKind(): void
@@ -224,7 +218,7 @@ final class BlockSanitizerRegistryTest extends TestCase
         $this->expectExceptionMessage('Block data must contain a valid "kind" field');
 
         $blockData = ['kind' => 123, 'source' => 'content'];
-        $this->registry->sanitizeBlock($blockData);
+        $this->manager->sanitizeBlock($blockData);
     }
 
 

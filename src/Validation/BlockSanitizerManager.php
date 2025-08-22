@@ -6,7 +6,10 @@ namespace PortableContent\Validation;
 
 use PortableContent\Contracts\Block\BlockSanitizerInterface;
 
-final class BlockSanitizerRegistry
+/**
+ * Manager for coordinating block sanitizers and sanitization processes.
+ */
+final class BlockSanitizerManager
 {
     /**
      * @var array<string, BlockSanitizerInterface>
@@ -79,15 +82,15 @@ final class BlockSanitizerRegistry
     {
         $sanitizedBlocks = [];
 
-        foreach ($blocks as $blockData) {
+        foreach ($blocks as $index => $blockData) {
             if (!is_array($blockData)) {
-                continue; // Skip invalid block data
+                throw new \InvalidArgumentException(
+                    "Invalid block data at index {$index}: expected array, got " . gettype($blockData)
+                );
             }
 
             $sanitizedBlock = $this->sanitizeBlock($blockData);
-            if (!empty($sanitizedBlock)) {
-                $sanitizedBlocks[] = $sanitizedBlock;
-            }
+            $sanitizedBlocks[] = $sanitizedBlock;
         }
 
         return $sanitizedBlocks;

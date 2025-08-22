@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace PortableContent\Validation;
 
 use PortableContent\Contracts\SanitizerInterface;
-use PortableContent\Validation\BlockSanitizerRegistry;
 
 final class ContentSanitizer implements SanitizerInterface
 {
     public function __construct(
-        private readonly BlockSanitizerRegistry $blockSanitizerRegistry,
+        private readonly BlockSanitizerManager $blockSanitizerManager,
     ) {}
 
     /**
@@ -47,9 +46,12 @@ final class ContentSanitizer implements SanitizerInterface
 
         // Sanitize blocks array using the registry
         if (isset($data['blocks']) && $data['blocks'] !== null) {
-            if (is_array($data['blocks'])) {
-                $sanitized['blocks'] = $this->blockSanitizerRegistry->sanitizeBlocks($data['blocks']);
+            if (!is_array($data['blocks'])) {
+                throw new \InvalidArgumentException(
+                    'Invalid blocks data: expected array, got ' . gettype($data['blocks'])
+                );
             }
+            $sanitized['blocks'] = $this->blockSanitizerManager->sanitizeBlocks($data['blocks']);
         }
 
         return $sanitized;
