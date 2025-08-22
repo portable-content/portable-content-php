@@ -10,8 +10,6 @@ use PortableContent\Validation\BlockSanitizerRegistry;
 
 /**
  * @internal
- *
- * @coversNothing
  */
 final class BlockSanitizerRegistryTest extends TestCase
 {

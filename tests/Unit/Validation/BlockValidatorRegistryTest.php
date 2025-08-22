@@ -12,8 +12,6 @@ use PortableContent\Validation\ValueObjects\ValidationResult;
 
 /**
  * @internal
- *
- * @coversNothing
  */
 final class BlockValidatorRegistryTest extends TestCase
 {
