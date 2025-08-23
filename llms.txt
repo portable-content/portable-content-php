@@ -1,0 +1,329 @@
+# Portable Content PHP - LLM Guide
+
+This file provides essential information for Large Language Models (LLMs) working with the Portable Content PHP library.
+
+## Library Overview
+
+**Portable Content PHP** is a production-ready PHP 8.3+ library for managing structured content with markdown blocks. It provides a complete content management system with validation, sanitization, and persistence.
+
+**Key Features:**
+- Immutable domain objects with type safety
+- Comprehensive input validation and sanitization
+- Repository pattern for data persistence
+- Extensible block system (currently supports Markdown)
+- Transaction-safe SQLite storage
+- 315+ tests with full end-to-end coverage
+
+## Quick Start for LLMs
+
+### Basic Content Creation
+
+```php
+use PortableContent\Block\Markdown\MarkdownBlock;
+use PortableContent\ContentItem;
+use PortableContent\Tests\Support\Repository\RepositoryFactory;
+
+// Create content
+$block = MarkdownBlock::create('# Hello World\n\nContent here.');
+$content = ContentItem::create('note', 'My Note', 'Summary', [$block]);
+
+// Save to repository
+$repository = RepositoryFactory::createInMemoryRepository();
+$repository->save($content);
+
+// Retrieve content
+$retrieved = $repository->findById($content->id);
+```
+
+### With Input Validation
+
+```php
+use PortableContent\Validation\ContentValidationService;
+use PortableContent\Validation\ContentSanitizer;
+use PortableContent\Validation\BlockSanitizerManager;
+use PortableContent\Validation\Adapters\SymfonyValidatorAdapter;
+use PortableContent\Block\Markdown\MarkdownBlockSanitizer;
+use Symfony\Component\Validator\Validation;
+
+// Set up validation
+$blockSanitizerManager = new BlockSanitizerManager([new MarkdownBlockSanitizer()]);
+$contentSanitizer = new ContentSanitizer($blockSanitizerManager);
+$symfonyValidator = Validation::createValidator();
+$contentValidator = new SymfonyValidatorAdapter($symfonyValidator);
+$validationService = new ContentValidationService($contentSanitizer, $contentValidator);
+
+// Validate raw input
+$rawData = [
+    'type' => 'note',
+    'title' => 'My Note',
+    'blocks' => [['kind' => 'markdown', 'source' => '# Content']]
+];
+
+$result = $validationService->validateContentCreation($rawData);
+if ($result->isValid()) {
+    $sanitizedData = $result->getData();
+    // Create domain objects from validated data...
+}
+```
+
+## Core Classes Reference
+
+### ContentItem (Immutable Aggregate Root)
+```php
+// Creation
+ContentItem::create(string $type, ?string $title = null, ?string $summary = null, array $blocks = [])
+
+// Updates (returns new instance)
+$content->withTitle(string $title)
+$content->withSummary(string $summary)
+$content->withBlocks(array $blocks)
+$content->addBlock(BlockInterface $block)
+
+// Properties (readonly)
+$content->id          // string (UUID)
+$content->type        // string
+$content->title       // ?string
+$content->summary     // ?string
+$content->blocks      // BlockInterface[]
+$content->createdAt   // DateTimeImmutable
+$content->updatedAt   // DateTimeImmutable
+```
+
+### MarkdownBlock (Immutable Block Implementation)
+```php
+// Creation
+MarkdownBlock::create(string $source)
+
+// Updates
+$block->withSource(string $source)
+
+// Properties
+$block->id          // string (UUID)
+$block->source      // string (markdown content)
+$block->createdAt   // DateTimeImmutable
+
+// Methods
+$block->getId()
+$block->getCreatedAt()
+$block->isEmpty()
+$block->getWordCount()
+```
+
+### Repository Operations
+```php
+// Repository interface
+interface ContentRepositoryInterface {
+    public function save(ContentItem $content): void;
+    public function findById(string $id): ?ContentItem;
+    public function findAll(int $limit = 20, int $offset = 0): array;
+    public function delete(string $id): void;
+}
+
+// Factory methods
+RepositoryFactory::createInMemoryRepository()           // For testing
+RepositoryFactory::createSQLiteRepository(string $path) // For production
+RepositoryFactory::getDefaultRepository()               // Singleton instance
+```
+
+### Validation System
+```php
+// Main validation service
+ContentValidationService::validateContentCreation(array $data): ValidationResult
+ContentValidationService::validateContentUpdate(array $data): ValidationResult
+ContentValidationService::sanitizeContent(array $data): array
+
+// Validation result
+$result->isValid(): bool
+$result->getData(): ?array
+$result->getErrors(): array
+$result->hasFieldErrors(string $field): bool
+$result->getFieldErrors(string $field): array
+```
+
+## Data Validation Rules
+
+### Content Level
+- **type**: Required, alphanumeric + underscore, max 50 chars
+- **title**: Optional, max 255 chars
+- **summary**: Optional, max 1000 chars
+- **blocks**: Required, 1-10 blocks, all must be valid
+
+### Block Level (Markdown)
+- **kind**: Must be 'markdown'
+- **source**: Required, non-empty, max 100KB
+
+## Common Patterns for LLMs
+
+### 1. API Endpoint Pattern
+```php
+function createContentEndpoint(array $requestData): array {
+    try {
+        $result = $validationService->validateContentCreation($requestData);
+        
+        if (!$result->isValid()) {
+            return ['success' => false, 'errors' => $result->getErrors()];
+        }
+        
+        $sanitizedData = $result->getData();
+        $blocks = [];
+        foreach ($sanitizedData['blocks'] as $blockData) {
+            $blocks[] = MarkdownBlock::create($blockData['source']);
+        }
+        
+        $content = ContentItem::create(
+            $sanitizedData['type'],
+            $sanitizedData['title'] ?? null,
+            $sanitizedData['summary'] ?? null,
+            $blocks
+        );
+        
+        $repository->save($content);
+        
+        return ['success' => true, 'id' => $content->id];
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+```
+
+### 2. CRUD Operations Pattern
+```php
+// Create
+$content = ContentItem::create('note', 'Title');
+$repository->save($content);
+
+// Read
+$content = $repository->findById($id);
+
+// Update (immutable)
+$updated = $content->withTitle('New Title');
+$repository->save($updated);
+
+// Delete
+$repository->delete($id);
+
+// List with pagination
+$items = $repository->findAll(limit: 20, offset: 0);
+```
+
+### 3. Error Handling Pattern
+```php
+use PortableContent\Exception\InvalidContentException;
+use PortableContent\Exception\RepositoryException;
+
+try {
+    // Operations
+} catch (InvalidContentException $e) {
+    // Domain validation errors
+} catch (RepositoryException $e) {
+    // Database/persistence errors
+} catch (Exception $e) {
+    // Unexpected errors
+}
+```
+
+### 4. Testing Pattern
+```php
+class MyTest extends TestCase {
+    private ContentRepositoryInterface $repository;
+    
+    protected function setUp(): void {
+        $this->repository = RepositoryFactory::createInMemoryRepository();
+    }
+    
+    public function testSomething(): void {
+        $content = ContentItem::create('test', 'Test');
+        $this->repository->save($content);
+        
+        $retrieved = $this->repository->findById($content->id);
+        $this->assertNotNull($retrieved);
+    }
+}
+```
+
+## Important Notes for LLMs
+
+### 1. Immutability
+- All domain objects are immutable
+- Updates return new instances, don't modify existing ones
+- Use `with*()` methods for updates
+
+### 2. Type Safety
+- Library uses strict typing (`declare(strict_types=1);`)
+- Always respect type hints and return types
+- Use proper type annotations in generated code
+
+### 3. Validation Pipeline
+- Always validate user input through ContentValidationService
+- Sanitization happens automatically before validation
+- Check ValidationResult before creating domain objects
+
+### 4. Repository Pattern
+- Use RepositoryFactory for creating repositories
+- In-memory repository for testing, SQLite for production
+- All operations are transaction-safe
+
+### 5. Error Handling
+- Use specific exception types (InvalidContentException, RepositoryException)
+- ValidationResult for validation errors (no exceptions)
+- Always handle potential null returns from repository
+
+### 6. Block System
+- Currently only MarkdownBlock is implemented
+- System is extensible for future block types
+- All blocks must implement BlockInterface
+
+## File Structure
+```
+src/
+├── Block/Markdown/           # Markdown block implementation
+├── Contracts/               # Interfaces
+├── Exception/              # Exception classes
+├── Validation/             # Validation system
+├── ContentItem.php         # Main domain object
+tests/
+├── Integration/            # End-to-end tests
+├── Unit/                  # Unit tests
+├── Support/               # Test utilities
+docs/                      # Documentation
+├── getting-started.md     # Setup and basic usage
+├── api-reference.md       # Complete API docs
+├── validation.md          # Validation system
+├── examples.md           # Usage examples
+├── architecture.md       # System design
+└── repository.md         # Repository pattern
+```
+
+## Database Schema (SQLite)
+```sql
+CREATE TABLE content_items (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL DEFAULT 'note',
+    title TEXT,
+    summary TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE markdown_blocks (
+    id TEXT PRIMARY KEY,
+    content_id TEXT NOT NULL,
+    source TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (content_id) REFERENCES content_items(id) ON DELETE CASCADE
+);
+```
+
+## Testing
+- 315+ tests with comprehensive coverage
+- Use `composer test` to run all tests
+- Use `RepositoryFactory::createInMemoryRepository()` for test isolation
+- Integration tests verify complete workflows
+
+## Quality Tools
+- PHPStan Level 9 (strictest static analysis)
+- PHP-CS-Fixer for code style
+- Comprehensive test suite
+- GitHub Actions CI/CD
+
+This library is production-ready and follows PHP best practices. When generating code, always respect the immutable design, use proper validation, and follow the established patterns.
