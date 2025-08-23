@@ -43,4 +43,44 @@ interface ContentRepositoryInterface
      * Check if a ContentItem exists by ID.
      */
     public function exists(string $id): bool;
+
+    /**
+     * Find ContentItems by type with pagination.
+     *
+     * @return array<int, ContentItem>
+     */
+    public function findByType(string $type, int $limit = 20, int $offset = 0): array;
+
+    /**
+     * Find ContentItems within a date range.
+     *
+     * @return array<int, ContentItem>
+     */
+    public function findByDateRange(\DateTimeInterface $start, \DateTimeInterface $end): array;
+
+    /**
+     * Search for ContentItems using text query.
+     *
+     * @return array<int, ContentItem>
+     */
+    public function search(string $query, int $limit = 10): array;
+
+    /**
+     * Find ContentItems similar to the given content.
+     *
+     * @return array<int, ContentItem>
+     */
+    public function findSimilar(ContentItem $content, int $limit = 10): array;
+
+    /**
+     * Get the capabilities supported by this repository.
+     *
+     * @return array<int, string>
+     */
+    public function getCapabilities(): array;
+
+    /**
+     * Check if the repository supports a specific capability.
+     */
+    public function supports(string $capability): bool;
 }

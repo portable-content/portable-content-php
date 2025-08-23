@@ -134,8 +134,8 @@ final class RepositoryErrorHandlingTest extends IntegrationTestCase
 
         $this->assertEquals(1, $repository->count());
 
-        // Now corrupt the blocks table to cause a save failure
-        $pdo->exec('DROP TABLE markdown_blocks');
+        // Make the database read-only to cause a save failure
+        $pdo->exec('PRAGMA query_only = ON');
 
         $content2 = ContentItem::create('note', 'Second Content')
             ->addBlock(MarkdownBlock::create('# Test Block'))
@@ -145,9 +145,12 @@ final class RepositoryErrorHandlingTest extends IntegrationTestCase
             $repository->save($content2);
             $this->fail('Expected RepositoryException');
         } catch (RepositoryException $e) {
-            // Verify the transaction was rolled back - count should still be 1
-            $this->assertEquals(1, $repository->count());
+            // Verify we got the expected error message
             $this->assertStringContainsString('Failed to save content', $e->getMessage());
+
+            // Reset the database to read-write mode and verify original content is still there
+            $pdo->exec('PRAGMA query_only = OFF');
+            $this->assertEquals(1, $repository->count());
         }
     }
 

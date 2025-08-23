@@ -6,6 +6,7 @@ namespace PortableContent\Tests\Support\Repository;
 
 use PortableContent\Block\Markdown\MarkdownBlock;
 use PortableContent\ContentItem;
+use PortableContent\Contracts\Block\BlockInterface;
 use PortableContent\Contracts\ContentRepositoryInterface;
 use PortableContent\Exception\RepositoryException;
 
@@ -22,18 +23,23 @@ final class SQLiteContentRepository implements ContentRepositoryInterface
         try {
             $this->pdo->beginTransaction();
 
-            // Save or update the content item
-            $this->saveContentItem($content);
+            $blocksJson = json_encode($this->serializeBlocks($content->blocks), JSON_THROW_ON_ERROR);
 
-            // Delete existing blocks (for updates)
-            $this->deleteContentBlocks($content->id);
+            $stmt = $this->pdo->prepare('
+                INSERT OR REPLACE INTO content_items
+                (id, type, title, summary, blocks, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ');
 
-            // Save all blocks
-            foreach ($content->blocks as $block) {
-                if ($block instanceof MarkdownBlock) {
-                    $this->saveMarkdownBlock($content->id, $block);
-                }
-            }
+            $stmt->execute([
+                $content->id,
+                $content->type,
+                $content->title,
+                $content->summary,
+                $blocksJson,
+                $content->createdAt->format('c'),
+                $content->updatedAt->format('c'),
+            ]);
 
             $this->pdo->commit();
         } catch (\PDOException $e) {
@@ -50,25 +56,15 @@ final class SQLiteContentRepository implements ContentRepositoryInterface
     public function findById(string $id): ?ContentItem
     {
         try {
-            // Load content item
-            $contentData = $this->loadContentItem($id);
-            if (null === $contentData) {
+            $stmt = $this->pdo->prepare('SELECT * FROM content_items WHERE id = ?');
+            $stmt->execute([$id]);
+            $data = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!is_array($data)) {
                 return null;
             }
 
-            // Load blocks
-            $blocks = $this->loadContentBlocks($id);
-
-            // Reconstruct ContentItem
-            return new ContentItem(
-                id: $this->ensureString($contentData['id']),
-                type: $this->ensureString($contentData['type']),
-                title: null !== $contentData['title'] ? $this->ensureString($contentData['title']) : null,
-                summary: null !== $contentData['summary'] ? $this->ensureString($contentData['summary']) : null,
-                blocks: $blocks,
-                createdAt: new \DateTimeImmutable($this->ensureString($contentData['created_at'])),
-                updatedAt: new \DateTimeImmutable($this->ensureString($contentData['updated_at']))
-            );
+            return $this->hydrateContentItem($data);
         } catch (\PDOException $e) {
             throw RepositoryException::queryFailure('findById', $e->getMessage());
         }
@@ -107,7 +103,7 @@ final class SQLiteContentRepository implements ContentRepositoryInterface
         try {
             $stmt = $this->pdo->prepare('DELETE FROM content_items WHERE id = ?');
             $stmt->execute([$id]);
-            // Blocks are automatically deleted due to CASCADE constraint
+            // Blocks are stored as JSON, so they're automatically deleted with the content item
         } catch (\PDOException $e) {
             throw RepositoryException::deleteFailure($id, $e->getMessage());
         }
@@ -140,89 +136,189 @@ final class SQLiteContentRepository implements ContentRepositoryInterface
         }
     }
 
-    private function saveContentItem(ContentItem $content): void
+    public function findByType(string $type, int $limit = 20, int $offset = 0): array
     {
-        $stmt = $this->pdo->prepare('
-            INSERT OR REPLACE INTO content_items 
-            (id, type, title, summary, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ');
+        try {
+            $stmt = $this->pdo->prepare('
+                SELECT * FROM content_items
+                WHERE type = ?
+                ORDER BY created_at DESC
+                LIMIT ? OFFSET ?
+            ');
+            $stmt->execute([$type, $limit, $offset]);
+            $contentRows = $stmt->fetchAll();
 
-        $stmt->execute([
-            $content->id,
-            $content->type,
-            $content->title,
-            $content->summary,
-            $content->createdAt->format('c'),
-            $content->updatedAt->format('c'),
-        ]);
-    }
+            $results = [];
+            foreach ($contentRows as $row) {
+                $content = $this->hydrateContentItem($row);
+                $results[] = $content;
+            }
 
-    private function deleteContentBlocks(string $contentId): void
-    {
-        $stmt = $this->pdo->prepare('DELETE FROM markdown_blocks WHERE content_id = ?');
-        $stmt->execute([$contentId]);
-    }
-
-    private function saveMarkdownBlock(string $contentId, MarkdownBlock $block): void
-    {
-        $stmt = $this->pdo->prepare('
-            INSERT INTO markdown_blocks (id, content_id, source, created_at)
-            VALUES (?, ?, ?, ?)
-        ');
-
-        $stmt->execute([
-            $block->id,
-            $contentId,
-            $block->source,
-            $block->createdAt->format('c'),
-        ]);
-    }
-
-    /**
-     * @return null|array<string, mixed>
-     */
-    private function loadContentItem(string $id): ?array
-    {
-        $stmt = $this->pdo->prepare('SELECT * FROM content_items WHERE id = ?');
-        $stmt->execute([$id]);
-
-        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-        if (false === $result) {
-            return null;
+            return $results;
+        } catch (\PDOException $e) {
+            throw RepositoryException::queryFailure('findByType', $e->getMessage());
         }
+    }
 
-        // Ensure we have the expected array structure
-        if (!is_array($result)) {
-            return null;
+    public function findByDateRange(\DateTimeInterface $start, \DateTimeInterface $end): array
+    {
+        try {
+            $stmt = $this->pdo->prepare('
+                SELECT * FROM content_items
+                WHERE created_at BETWEEN ? AND ?
+                ORDER BY created_at DESC
+            ');
+            $stmt->execute([$start->format('c'), $end->format('c')]);
+            $contentRows = $stmt->fetchAll();
+
+            $results = [];
+            foreach ($contentRows as $row) {
+                $content = $this->hydrateContentItem($row);
+                $results[] = $content;
+            }
+
+            return $results;
+        } catch (\PDOException $e) {
+            throw RepositoryException::queryFailure('findByDateRange', $e->getMessage());
         }
+    }
 
-        return $result;
+    public function search(string $query, int $limit = 10): array
+    {
+        try {
+            $stmt = $this->pdo->prepare('
+                SELECT * FROM content_items
+                WHERE title LIKE ? OR summary LIKE ? OR blocks LIKE ?
+                ORDER BY created_at DESC
+                LIMIT ?
+            ');
+            $searchTerm = "%{$query}%";
+            $stmt->execute([$searchTerm, $searchTerm, $searchTerm, $limit]);
+            $contentRows = $stmt->fetchAll();
+
+            $results = [];
+            foreach ($contentRows as $row) {
+                $content = $this->hydrateContentItem($row);
+                $results[] = $content;
+            }
+
+            return $results;
+        } catch (\PDOException $e) {
+            throw RepositoryException::queryFailure('search', $e->getMessage());
+        }
+    }
+
+    public function findSimilar(ContentItem $content, int $limit = 10): array
+    {
+        // For SQLite, we'll use a simple approach: find content of the same type
+        // excluding the original content
+        try {
+            $stmt = $this->pdo->prepare('
+                SELECT * FROM content_items
+                WHERE type = ? AND id != ?
+                ORDER BY created_at DESC
+                LIMIT ?
+            ');
+            $stmt->execute([$content->type, $content->id, $limit]);
+            $contentRows = $stmt->fetchAll();
+
+            $results = [];
+            foreach ($contentRows as $row) {
+                $contentItem = $this->hydrateContentItem($row);
+                $results[] = $contentItem;
+            }
+
+            return $results;
+        } catch (\PDOException $e) {
+            throw RepositoryException::queryFailure('findSimilar', $e->getMessage());
+        }
+    }
+
+    public function getCapabilities(): array
+    {
+        return [
+            'crud',
+            'full_text_search',
+            'transactions',
+        ];
+    }
+
+    public function supports(string $capability): bool
+    {
+        return in_array($capability, $this->getCapabilities(), true);
     }
 
     /**
      * @return array<int, MarkdownBlock>
      */
-    private function loadContentBlocks(string $contentId): array
+    private function deserializeBlocks(string $blocksJson): array
     {
-        $stmt = $this->pdo->prepare('
-            SELECT * FROM markdown_blocks 
-            WHERE content_id = ? 
-            ORDER BY created_at ASC
-        ');
-        $stmt->execute([$contentId]);
-        $blockRows = $stmt->fetchAll();
+        $blocksData = json_decode($blocksJson, true, 512, JSON_THROW_ON_ERROR);
+        if (!is_array($blocksData)) {
+            return [];
+        }
 
         $blocks = [];
-        foreach ($blockRows as $row) {
-            $blocks[] = new MarkdownBlock(
-                id: $this->ensureString($row['id']),
-                source: $this->ensureString($row['source']),
-                createdAt: new \DateTimeImmutable($this->ensureString($row['created_at']))
-            );
+
+        foreach ($blocksData as $blockData) {
+            if (!is_array($blockData) || !isset($blockData['type'])) {
+                continue;
+            }
+
+            if ('markdown' === $blockData['type']) {
+                $blocks[] = new MarkdownBlock(
+                    id: $this->ensureString($blockData['id'] ?? ''),
+                    source: $this->ensureString($blockData['source'] ?? ''),
+                    createdAt: new \DateTimeImmutable($this->ensureString($blockData['created_at'] ?? ''))
+                );
+            }
         }
 
         return $blocks;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function hydrateContentItem(array $data): ContentItem
+    {
+        $blocksData = $data['blocks'] ?? '[]';
+        if (!is_string($blocksData)) {
+            $blocksData = '[]';
+        }
+        $blocks = $this->deserializeBlocks($blocksData);
+
+        return new ContentItem(
+            id: $this->ensureString($data['id']),
+            type: $this->ensureString($data['type']),
+            title: null !== $data['title'] ? $this->ensureString($data['title']) : null,
+            summary: null !== $data['summary'] ? $this->ensureString($data['summary']) : null,
+            blocks: $blocks,
+            createdAt: new \DateTimeImmutable($this->ensureString($data['created_at'])),
+            updatedAt: new \DateTimeImmutable($this->ensureString($data['updated_at']))
+        );
+    }
+
+    /**
+     * @param array<int, BlockInterface> $blocks
+     *
+     * @return array<int, array<string, string>>
+     */
+    private function serializeBlocks(array $blocks): array
+    {
+        $serialized = [];
+        foreach ($blocks as $block) {
+            if ($block instanceof MarkdownBlock) {
+                $serialized[] = [
+                    'id' => $block->id,
+                    'type' => 'markdown',
+                    'source' => $block->source,
+                    'created_at' => $block->createdAt->format('c'),
+                ];
+            }
+        }
+
+        return $serialized;
     }
 
     private function ensureString(mixed $value): string

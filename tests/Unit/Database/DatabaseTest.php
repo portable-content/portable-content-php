@@ -44,7 +44,7 @@ final class DatabaseTest extends TestCase
 
         // Check that tables were created
         $this->assertTrue(Database::tableExists($pdo, 'content_items'));
-        $this->assertTrue(Database::tableExists($pdo, 'markdown_blocks'));
+        // markdown_blocks table no longer exists - blocks are stored as JSON
     }
 
     public function testTableExists(): void
@@ -52,7 +52,7 @@ final class DatabaseTest extends TestCase
         $pdo = $this->createTestDatabase();
 
         $this->assertTrue(Database::tableExists($pdo, 'content_items'));
-        $this->assertTrue(Database::tableExists($pdo, 'markdown_blocks'));
+        $this->assertFalse(Database::tableExists($pdo, 'markdown_blocks')); // No longer exists
         $this->assertFalse(Database::tableExists($pdo, 'nonexistent_table'));
     }
 
@@ -73,44 +73,88 @@ final class DatabaseTest extends TestCase
         $this->assertContains('created_at', $columnNames);
     }
 
-    public function testForeignKeyConstraints(): void
+    public function testJsonBlockStorage(): void
     {
         $pdo = $this->createTestDatabase();
 
-        // Insert a content item
-        $this->insertTestContent($pdo, 'test-content', 'note', 'Test Title');
+        // Insert a content item with JSON blocks
+        $blocksJson = json_encode([
+            [
+                'id' => 'test-block',
+                'type' => 'markdown',
+                'source' => '# Test Block',
+                'created_at' => '2024-01-01T00:00:00Z',
+            ],
+        ]);
 
-        // Insert a block with valid content_id
-        $this->insertTestBlock($pdo, 'test-block', 'test-content', '# Test');
+        $stmt = $pdo->prepare('
+            INSERT INTO content_items (id, type, title, blocks, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ');
+        $stmt->execute([
+            'test-content',
+            'note',
+            'Test Title',
+            $blocksJson,
+            '2024-01-01T00:00:00Z',
+            '2024-01-01T00:00:00Z',
+        ]);
 
-        // This should work
-        $this->assertTrue(true);
+        // Verify JSON data can be retrieved and parsed
+        $stmt = $pdo->prepare('SELECT blocks FROM content_items WHERE id = ?');
+        $stmt->execute(['test-content']);
+        $retrievedJson = $stmt->fetchColumn();
 
-        // Try to insert a block with invalid content_id - should fail
-        $this->expectException(\PDOException::class);
-        $this->insertTestBlock($pdo, 'test-block-2', 'nonexistent-content', '# Test');
+        $this->assertIsString($retrievedJson);
+        $blocks = json_decode($retrievedJson, true);
+        $this->assertIsArray($blocks);
+        $this->assertCount(1, $blocks);
+        $this->assertIsArray($blocks[0]);
+        $this->assertEquals('test-block', $blocks[0]['id']);
+        $this->assertEquals('markdown', $blocks[0]['type']);
+        $this->assertEquals('# Test Block', $blocks[0]['source']);
     }
 
-    public function testCascadeDelete(): void
+    public function testJsonExtractQueries(): void
     {
         $pdo = $this->createTestDatabase();
 
-        // Insert content and block
-        $this->insertTestContent($pdo, 'test-content', 'note', 'Test Title');
-        $this->insertTestBlock($pdo, 'test-block', 'test-content', '# Test');
+        // Insert content with JSON blocks
+        $blocksJson = json_encode([
+            [
+                'id' => 'block-1',
+                'type' => 'markdown',
+                'source' => '# First Block',
+                'created_at' => '2024-01-01T00:00:00Z',
+            ],
+        ]);
 
-        // Verify block exists
-        $stmt = $pdo->prepare('SELECT COUNT(*) FROM markdown_blocks WHERE content_id = ?');
-        $stmt->execute(['test-content']);
-        $this->assertEquals(1, $stmt->fetchColumn());
+        $stmt = $pdo->prepare('
+            INSERT INTO content_items (id, type, title, blocks, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ');
+        $stmt->execute([
+            'test-content',
+            'note',
+            'Test Title',
+            $blocksJson,
+            '2024-01-01T00:00:00Z',
+            '2024-01-01T00:00:00Z',
+        ]);
 
-        // Delete content
-        $stmt = $pdo->prepare('DELETE FROM content_items WHERE id = ?');
+        // Test JSON extraction
+        $stmt = $pdo->prepare('
+            SELECT
+                json_extract(blocks, "$[0].type") as first_block_type,
+                json_extract(blocks, "$[0].source") as first_block_source
+            FROM content_items
+            WHERE id = ?
+        ');
         $stmt->execute(['test-content']);
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-        // Verify block was cascade deleted
-        $stmt = $pdo->prepare('SELECT COUNT(*) FROM markdown_blocks WHERE content_id = ?');
-        $stmt->execute(['test-content']);
-        $this->assertEquals(0, $stmt->fetchColumn());
+        $this->assertIsArray($result);
+        $this->assertEquals('markdown', $result['first_block_type']);
+        $this->assertEquals('# First Block', $result['first_block_source']);
     }
 }
