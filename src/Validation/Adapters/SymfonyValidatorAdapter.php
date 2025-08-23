@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace PortableContent\Validation\Adapters;
 
 use PortableContent\Contracts\ContentValidatorInterface;
-use PortableContent\Validation\ValueObjects\ValidationResult;
 use PortableContent\Validation\BlockValidatorManager;
+use PortableContent\Validation\ValueObjects\ValidationResult;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class SymfonyValidatorAdapter implements ContentValidatorInterface
 {
@@ -99,7 +99,7 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
         $result = empty($errors) ? ValidationResult::success() : ValidationResult::failure($errors);
 
         // If basic validation passes and we have block validators, validate blocks individually
-        if ($result->isValid() && $this->blockValidatorManager !== null && isset($data['blocks']) && is_array($data['blocks'])) {
+        if ($result->isValid() && null !== $this->blockValidatorManager && isset($data['blocks']) && is_array($data['blocks'])) {
             $result = $this->validateBlocksWithRegistry($data['blocks'], $result);
         }
 
@@ -172,7 +172,7 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
         $result = empty($errors) ? ValidationResult::success() : ValidationResult::failure($errors);
 
         // If basic validation passes and we have block validators, validate blocks individually
-        if ($result->isValid() && $this->blockValidatorManager !== null && isset($data['blocks']) && is_array($data['blocks'])) {
+        if ($result->isValid() && null !== $this->blockValidatorManager && isset($data['blocks']) && is_array($data['blocks'])) {
             $result = $this->validateBlocksWithRegistry($data['blocks'], $result);
         }
 
@@ -180,7 +180,7 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
     }
 
     /**
-     * Custom validation for markdown security
+     * Custom validation for markdown security.
      */
     public function validateMarkdownSecurity(mixed $value, ExecutionContextInterface $context): void
     {
@@ -191,18 +191,20 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
         // Check for script tags
         if (preg_match('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', $value)) {
             $context->buildViolation('Script tags are not allowed in markdown content')
-                ->addViolation();
+                ->addViolation()
+            ;
         }
 
         // Check UTF-8 encoding
         if (!mb_check_encoding($value, 'UTF-8')) {
             $context->buildViolation('Content must be valid UTF-8 encoded text')
-                ->addViolation();
+                ->addViolation()
+            ;
         }
     }
 
     /**
-     * Validate blocks using the block validator registry
+     * Validate blocks using the block validator registry.
      *
      * @param array<array<string, mixed>> $blocks
      */
@@ -218,10 +220,10 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
                 continue;
             }
 
-            if ($this->blockValidatorManager !== null && $this->blockValidatorManager->hasValidator($blockType)) {
+            if (null !== $this->blockValidatorManager && $this->blockValidatorManager->hasValidator($blockType)) {
                 try {
                     $blockValidator = $this->blockValidatorManager->getValidator($blockType);
-                    if ($blockValidator !== null) {
+                    if (null !== $blockValidator) {
                         $blockResult = $blockValidator->validate($blockData);
 
                         if (!$blockResult->isValid()) {
@@ -233,7 +235,7 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
                     // If block validation fails, add a generic error
                     $errorResult = ValidationResult::singleError(
                         'blocks',
-                        "Block {$index} validation failed: " . $e->getMessage()
+                        "Block {$index} validation failed: ".$e->getMessage()
                     );
                     $currentResult = $currentResult->merge($errorResult);
                 }
@@ -244,7 +246,7 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
     }
 
     /**
-     * Add violations to errors array
+     * Add violations to errors array.
      *
      * @param array<string, string[]> $errors
      */
@@ -259,9 +261,10 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
     }
 
     /**
-     * Validate a single block
+     * Validate a single block.
      *
      * @param array<string, mixed> $blockData
+     *
      * @return array<string, string[]>
      */
     private function validateSingleBlock(array $blockData): array

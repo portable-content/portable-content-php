@@ -10,13 +10,13 @@ abstract class AbstractBlockSanitizer implements BlockSanitizerInterface
 {
     /**
      * Apply basic sanitization that's common to all block types.
-     * 
+     *
      * This method handles:
      * - Null byte removal
      * - Control character filtering
      * - Line ending normalization
      * - Basic whitespace cleanup
-     * 
+     *
      * Subclasses should call this method first, then apply their specific sanitization.
      */
     protected function applyBasicSanitization(string $source): string
@@ -24,17 +24,15 @@ abstract class AbstractBlockSanitizer implements BlockSanitizerInterface
         // Remove null bytes and other dangerous control characters
         $sanitized = str_replace("\0", '', $source);
         $result = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $sanitized);
-        $sanitized = $result !== null ? $result : $sanitized;
-        
+        $sanitized = null !== $result ? $result : $sanitized;
+
         // Normalize line endings to Unix style
-        $sanitized = str_replace(["\r\n", "\r"], "\n", $sanitized);
-        
-        return $sanitized;
+        return str_replace(["\r\n", "\r"], "\n", $sanitized);
     }
 
     /**
      * Apply basic kind sanitization that's common to all block types.
-     * 
+     *
      * This method handles:
      * - Trimming whitespace
      * - Converting to lowercase
@@ -45,14 +43,15 @@ abstract class AbstractBlockSanitizer implements BlockSanitizerInterface
         $sanitized = trim($kind);
         $sanitized = strtolower($sanitized);
         $result = preg_replace('/[^a-z0-9]/', '', $sanitized);
-        
-        return $result !== null ? $result : '';
+
+        return null !== $result ? $result : '';
     }
 
     /**
      * Validate that required block data fields are present and valid.
-     * 
+     *
      * @param array<string, mixed> $blockData
+     *
      * @throws \InvalidArgumentException if required fields are missing or invalid
      */
     protected function validateBlockData(array $blockData): void

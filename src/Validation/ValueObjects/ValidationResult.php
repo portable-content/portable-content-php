@@ -7,11 +7,13 @@ namespace PortableContent\Validation\ValueObjects;
 final class ValidationResult
 {
     /**
-     * @param array<string, string[]> $errors Field name => array of error messages
+     * @param array<string, string[]>   $errors Field name => array of error messages
+     * @param null|array<string, mixed> $data   Optional data to include with the result
      */
     public function __construct(
         private readonly bool $isValid,
-        private readonly array $errors = []
+        private readonly array $errors = [],
+        private readonly ?array $data = null
     ) {}
 
     public function isValid(): bool
@@ -25,6 +27,16 @@ final class ValidationResult
     public function getErrors(): array
     {
         return $this->errors;
+    }
+
+    /**
+     * Get the data associated with this result.
+     *
+     * @return null|array<string, mixed>
+     */
+    public function getData(): ?array
+    {
+        return $this->data;
     }
 
     /**
@@ -94,6 +106,16 @@ final class ValidationResult
     public static function success(): self
     {
         return new self(true);
+    }
+
+    /**
+     * Create a successful validation result with data.
+     *
+     * @param array<string, mixed> $data The data to include with the successful result
+     */
+    public static function successWithData(array $data): self
+    {
+        return new self(true, [], $data);
     }
 
     /**

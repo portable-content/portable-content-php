@@ -11,6 +11,8 @@ use PortableContent\Validation\ValueObjects\ValidationResult;
 
 /**
  * @internal
+ *
+ * @coversNothing
  */
 final class BlockValidatorManagerTest extends TestCase
 {
@@ -59,10 +61,10 @@ final class BlockValidatorManagerTest extends TestCase
 
     public function testRegisterValidator(): void
     {
-        $this->manager->register($this->mockValidator);
+        $this->registry->register($this->mockValidator);
 
-        $this->assertTrue($this->manager->hasValidator('test'));
-        $this->assertSame($this->mockValidator, $this->manager->getValidator('test'));
+        $this->assertTrue($this->registry->hasValidator('test'));
+        $this->assertSame($this->mockValidator, $this->registry->getValidator('test'));
     }
 
     public function testRegisterDuplicateValidatorThrowsException(): void
@@ -88,9 +90,9 @@ final class BlockValidatorManagerTest extends TestCase
 
     public function testHasValidatorReturnsTrueForRegisteredType(): void
     {
-        $this->manager->register($this->mockValidator);
+        $this->registry->register($this->mockValidator);
 
-        $this->assertTrue($this->manager->hasValidator('test'));
+        $this->assertTrue($this->registry->hasValidator('test'));
     }
 
     public function testGetSupportedBlockTypes(): void
@@ -98,10 +100,10 @@ final class BlockValidatorManagerTest extends TestCase
         $validator1 = $this->createMockValidator('markdown');
         $validator2 = $this->createMockValidator('code');
 
-        $this->manager->register($validator1);
-        $this->manager->register($validator2);
+        $this->registry->register($validator1);
+        $this->registry->register($validator2);
 
-        $supportedTypes = $this->manager->getSupportedBlockTypes();
+        $supportedTypes = $this->registry->getSupportedBlockTypes();
 
         $this->assertCount(2, $supportedTypes);
         $this->assertContains('markdown', $supportedTypes);
@@ -113,10 +115,10 @@ final class BlockValidatorManagerTest extends TestCase
         $validator1 = $this->createMockValidator('markdown');
         $validator2 = $this->createMockValidator('code');
 
-        $this->manager->register($validator1);
-        $this->manager->register($validator2);
+        $this->registry->register($validator1);
+        $this->registry->register($validator2);
 
-        $validators = $this->manager->getAllValidators();
+        $validators = $this->registry->getAllValidators();
 
         $this->assertCount(2, $validators);
         $this->assertContains($validator1, $validators);
@@ -125,12 +127,12 @@ final class BlockValidatorManagerTest extends TestCase
 
     public function testGetSupportedBlockTypesWithEmptyRegistry(): void
     {
-        $this->assertEmpty($this->manager->getSupportedBlockTypes());
+        $this->assertEmpty($this->registry->getSupportedBlockTypes());
     }
 
     public function testGetAllValidatorsWithEmptyRegistry(): void
     {
-        $this->assertEmpty($this->manager->getAllValidators());
+        $this->assertEmpty($this->registry->getAllValidators());
     }
 
     public function testMultipleValidatorsWithDifferentTypes(): void
@@ -139,18 +141,128 @@ final class BlockValidatorManagerTest extends TestCase
         $codeValidator = $this->createMockValidator('code');
         $imageValidator = $this->createMockValidator('image');
 
-        $this->manager->register($markdownValidator);
-        $this->manager->register($codeValidator);
-        $this->manager->register($imageValidator);
+        $this->registry->register($markdownValidator);
+        $this->registry->register($codeValidator);
+        $this->registry->register($imageValidator);
 
-        $this->assertTrue($this->manager->hasValidator('markdown'));
-        $this->assertTrue($this->manager->hasValidator('code'));
-        $this->assertTrue($this->manager->hasValidator('image'));
-        $this->assertFalse($this->manager->hasValidator('video'));
+        $this->assertTrue($this->registry->hasValidator('markdown'));
+        $this->assertTrue($this->registry->hasValidator('code'));
+        $this->assertTrue($this->registry->hasValidator('image'));
+        $this->assertFalse($this->registry->hasValidator('video'));
 
-        $this->assertSame($markdownValidator, $this->manager->getValidator('markdown'));
-        $this->assertSame($codeValidator, $this->manager->getValidator('code'));
-        $this->assertSame($imageValidator, $this->manager->getValidator('image'));
+        $this->assertSame($markdownValidator, $this->registry->getValidator('markdown'));
+        $this->assertSame($codeValidator, $this->registry->getValidator('code'));
+        $this->assertSame($imageValidator, $this->registry->getValidator('image'));
+    }
+
+    public function testValidateBlocks(): void
+    {
+        $this->manager->register($this->mockValidator);
+
+        $blocks = [
+            [
+                'kind' => 'test',
+                'source' => 'Content 1',
+            ],
+            [
+                'kind' => 'test',
+                'source' => 'Content 2',
+            ],
+        ];
+
+        // Should not throw exception for valid blocks
+        $this->manager->validateBlocks($blocks);
+        $this->assertTrue(true); // If we get here, validation passed
+    }
+
+    public function testValidateBlocksWithInvalidBlockData(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid block data at index 1: expected array, got string');
+
+        $this->manager->register($this->mockValidator);
+
+        $blocksWithInvalidData = [
+            [
+                'kind' => 'test',
+                'source' => 'Valid content',
+            ],
+            'invalid_block', // This should cause an exception
+            [
+                'kind' => 'test',
+                'source' => 'Another valid content',
+            ],
+        ];
+
+        // @phpstan-ignore-next-line - Intentionally passing invalid data to test exception
+        $this->manager->validateBlocks($blocksWithInvalidData);
+    }
+
+    public function testValidateBlocksWithUnknownType(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('No validator registered for block type: unknown');
+
+        $blocks = [
+            [
+                'kind' => 'unknown',
+                'source' => 'Content',
+            ],
+        ];
+
+        $this->manager->validateBlocks($blocks);
+    }
+
+    public function testValidateBlock(): void
+    {
+        $this->manager->register($this->mockValidator);
+
+        $blockData = [
+            'kind' => 'test',
+            'source' => 'Test content',
+        ];
+
+        // Should not throw exception for valid block
+        $this->manager->validateBlock($blockData);
+        $this->assertTrue(true); // If we get here, validation passed
+    }
+
+    public function testValidateBlockWithUnknownType(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('No validator registered for block type: unknown');
+
+        $blockData = [
+            'kind' => 'unknown',
+            'source' => 'Content',
+        ];
+
+        $this->manager->validateBlock($blockData);
+    }
+
+    public function testValidateBlockWithMissingKind(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Block data must contain a valid "kind" field');
+
+        $blockData = [
+            'source' => 'Content',
+        ];
+
+        $this->manager->validateBlock($blockData);
+    }
+
+    public function testValidateBlockWithNonStringKind(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Block data must contain a valid "kind" field');
+
+        $blockData = [
+            'kind' => 123,
+            'source' => 'Content',
+        ];
+
+        $this->manager->validateBlock($blockData);
     }
 
     private function createMockValidator(string $blockType): BlockValidatorInterface

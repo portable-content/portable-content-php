@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace PortableContent\Tests\Unit\Validation;
 
-use PortableContent\Tests\TestCase;
-use PortableContent\Validation\ContentSanitizer;
-use PortableContent\Validation\BlockSanitizerManager;
 use PortableContent\Block\Markdown\MarkdownBlockSanitizer;
+use PortableContent\Tests\TestCase;
+use PortableContent\Validation\BlockSanitizerManager;
+use PortableContent\Validation\ContentSanitizer;
 
 /**
  * @internal
+ *
+ * @coversNothing
  */
 final class ContentSanitizerTest extends TestCase
 {
@@ -23,13 +25,13 @@ final class ContentSanitizerTest extends TestCase
 
         // Create basic block manager for required parameter
         $basicManager = new BlockSanitizerManager([
-            new MarkdownBlockSanitizer()
+            new MarkdownBlockSanitizer(),
         ]);
         $this->sanitizer = new ContentSanitizer($basicManager);
 
         // Create sanitizer with block manager (same as basic for now)
         $blockManager = new BlockSanitizerManager([
-            new MarkdownBlockSanitizer()
+            new MarkdownBlockSanitizer(),
         ]);
         $this->sanitizerWithRegistry = new ContentSanitizer($blockManager);
     }
@@ -43,9 +45,9 @@ final class ContentSanitizerTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Hello World'
-                ]
-            ]
+                    'source' => '# Hello World',
+                ],
+            ],
         ];
 
         $result = $this->sanitizer->sanitize($data);
@@ -78,12 +80,12 @@ final class ContentSanitizerTest extends TestCase
         foreach ($testCases as $case) {
             $data = ['type' => $case['input']];
             $result = $this->sanitizer->sanitize($data);
-            if ($case['input'] === null) {
+            if (null === $case['input']) {
                 // Null values are not included in the result
-                $this->assertArrayNotHasKey('type', $result, "Failed for input: " . json_encode($case['input']));
+                $this->assertArrayNotHasKey('type', $result, 'Failed for input: '.json_encode($case['input']));
             } else {
-                $this->assertArrayHasKey('type', $result, "Failed for input: " . json_encode($case['input']));
-                $this->assertEquals($case['expected'], $result['type'], "Failed for input: " . json_encode($case['input']));
+                $this->assertArrayHasKey('type', $result, 'Failed for input: '.json_encode($case['input']));
+                $this->assertEquals($case['expected'], $result['type'], 'Failed for input: '.json_encode($case['input']));
             }
         }
     }
@@ -95,7 +97,7 @@ final class ContentSanitizerTest extends TestCase
             ['input' => '  Test Title  ', 'expected' => 'Test Title'],
             ['input' => "Test\x00Title", 'expected' => 'TestTitle'],
             ['input' => "Test\tTitle", 'expected' => 'Test Title'], // Tab becomes space
-            ['input' => "Test   Multiple   Spaces", 'expected' => 'Test Multiple Spaces'],
+            ['input' => 'Test   Multiple   Spaces', 'expected' => 'Test Multiple Spaces'],
             ['input' => '', 'expected' => null],
             ['input' => '   ', 'expected' => null],
             ['input' => null, 'expected' => null],
@@ -106,11 +108,11 @@ final class ContentSanitizerTest extends TestCase
         foreach ($testCases as $case) {
             $data = ['title' => $case['input']];
             $result = $this->sanitizer->sanitize($data);
-            if ($case['expected'] === null) {
+            if (null === $case['expected']) {
                 $this->assertArrayNotHasKey('title', $result);
             } else {
                 $this->assertArrayHasKey('title', $result);
-                $this->assertEquals($case['expected'], $result['title'], "Failed for input: " . json_encode($case['input']));
+                $this->assertEquals($case['expected'], $result['title'], 'Failed for input: '.json_encode($case['input']));
             }
         }
     }
@@ -131,11 +133,11 @@ final class ContentSanitizerTest extends TestCase
         foreach ($testCases as $case) {
             $data = ['summary' => $case['input']];
             $result = $this->sanitizer->sanitize($data);
-            if ($case['expected'] === null) {
+            if (null === $case['expected']) {
                 $this->assertArrayNotHasKey('summary', $result);
             } else {
                 $this->assertArrayHasKey('summary', $result);
-                $this->assertEquals($case['expected'], $result['summary'], "Failed for input: " . json_encode($case['input']));
+                $this->assertEquals($case['expected'], $result['summary'], 'Failed for input: '.json_encode($case['input']));
             }
         }
     }
@@ -146,13 +148,13 @@ final class ContentSanitizerTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Test'
+                    'source' => '# Test',
                 ],
                 [
                     'kind' => 'markdown',
-                    'source' => '## Test 2'
+                    'source' => '## Test 2',
                 ],
-            ]
+            ],
         ];
 
         $result = $this->sanitizer->sanitize($data);
@@ -174,14 +176,14 @@ final class ContentSanitizerTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Test'
+                    'source' => '# Test',
                 ],
                 [
                     'kind' => 'markdown',
-                    'source' => '## Test 2'
+                    'source' => '## Test 2',
                 ],
                 'invalid_block', // This should cause an exception
-            ]
+            ],
         ];
 
         $this->sanitizer->sanitize($data);
@@ -220,11 +222,11 @@ final class ContentSanitizerTest extends TestCase
         foreach ($testCases as $case) {
             $data = ['blocks' => [['kind' => 'markdown', 'source' => $case['input']]]];
             $result = $this->sanitizer->sanitize($data);
-            $this->assertNotEmpty($result['blocks'], "Failed for input: " . json_encode($case['input']));
+            $this->assertNotEmpty($result['blocks'], 'Failed for input: '.json_encode($case['input']));
             $this->assertIsArray($result['blocks']);
-            $this->assertIsArray($result['blocks'][0], "Failed for input: " . json_encode($case['input']));
-            $this->assertArrayHasKey('source', $result['blocks'][0], "Failed for input: " . json_encode($case['input']));
-            $this->assertEquals($case['expected'], $result['blocks'][0]['source'], "Failed for input: " . json_encode($case['input']));
+            $this->assertIsArray($result['blocks'][0], 'Failed for input: '.json_encode($case['input']));
+            $this->assertArrayHasKey('source', $result['blocks'][0], 'Failed for input: '.json_encode($case['input']));
+            $this->assertEquals($case['expected'], $result['blocks'][0]['source'], 'Failed for input: '.json_encode($case['input']));
         }
     }
 
@@ -244,9 +246,9 @@ final class ContentSanitizerTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => "  # Hello World  \n\n\n\n  This is a test.  "
-                ]
-            ]
+                    'source' => "  # Hello World  \n\n\n\n  This is a test.  ",
+                ],
+            ],
         ];
 
         $result = $this->sanitizerWithRegistry->sanitize($data);
@@ -269,7 +271,7 @@ final class ContentSanitizerTest extends TestCase
     public function testSanitizePartialData(): void
     {
         $data = [
-            'title' => 'Only Title'
+            'title' => 'Only Title',
         ];
 
         $result = $this->sanitizer->sanitize($data);
@@ -289,9 +291,9 @@ final class ContentSanitizerTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Original Content'
-                ]
-            ]
+                    'source' => '# Original Content',
+                ],
+            ],
         ];
 
         $sanitizedData = $this->sanitizer->sanitize($originalData);
@@ -338,9 +340,9 @@ final class ContentSanitizerTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Unicode Test 🌟\n\nContent with émojis and 中文字符'
-                ]
-            ]
+                    'source' => '# Unicode Test 🌟\n\nContent with émojis and 中文字符',
+                ],
+            ],
         ];
 
         $result = $this->sanitizer->sanitize($data);

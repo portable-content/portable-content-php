@@ -85,7 +85,7 @@ final class BlockSanitizerManager
         foreach ($blocks as $index => $blockData) {
             if (!is_array($blockData)) {
                 throw new \InvalidArgumentException(
-                    "Invalid block data at index {$index}: expected array, got " . gettype($blockData)
+                    "Invalid block data at index {$index}: expected array, got ".gettype($blockData)
                 );
             }
 
@@ -123,17 +123,21 @@ final class BlockSanitizerManager
             throw new \InvalidArgumentException('Block data must contain a valid "kind" field');
         }
 
-        if (!$this->hasSanitizer($blockType)) {
-            throw new \InvalidArgumentException("No sanitizer registered for block type: {$blockType}");
+        // Normalize block type: trim whitespace and convert to lowercase
+        $normalizedBlockType = strtolower(trim($blockType));
+
+        if (!$this->hasSanitizer($normalizedBlockType)) {
+            throw new \InvalidArgumentException("No sanitizer registered for block type: {$normalizedBlockType}");
         }
 
-        $sanitizer = $this->getSanitizer($blockType);
-        if ($sanitizer === null) {
-            throw new \InvalidArgumentException("No sanitizer registered for block type: {$blockType}");
+        $sanitizer = $this->getSanitizer($normalizedBlockType);
+        if (null === $sanitizer) {
+            throw new \InvalidArgumentException("No sanitizer registered for block type: {$normalizedBlockType}");
         }
+
+        // Update the block data with the normalized type before sanitizing
+        $blockData['kind'] = $normalizedBlockType;
 
         return $sanitizer->sanitize($blockData);
     }
-
-
 }

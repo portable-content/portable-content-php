@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace PortableContent\Tests\Unit\Validation\Adapters;
 
+use PortableContent\Block\Markdown\MarkdownBlockValidator;
 use PortableContent\Tests\TestCase;
 use PortableContent\Validation\Adapters\SymfonyValidatorAdapter;
 use PortableContent\Validation\BlockValidatorManager;
-use PortableContent\Block\Markdown\MarkdownBlockValidator;
 use Symfony\Component\Validator\Validation;
 
 /**
  * @internal
+ *
+ * @coversNothing
  */
 final class SymfonyValidatorAdapterTest extends TestCase
 {
@@ -21,13 +23,13 @@ final class SymfonyValidatorAdapterTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $symfonyValidator = Validation::createValidator();
         $this->validator = new SymfonyValidatorAdapter($symfonyValidator);
-        
+
         // Create validator with block manager for enhanced testing
         $blockManager = new BlockValidatorManager([
-            new MarkdownBlockValidator()
+            new MarkdownBlockValidator(),
         ]);
         $this->validatorWithBlockRegistry = new SymfonyValidatorAdapter($symfonyValidator, $blockManager);
     }
@@ -41,9 +43,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Hello World\n\nThis is a test.'
-                ]
-            ]
+                    'source' => '# Hello World\n\nThis is a test.',
+                ],
+            ],
         ];
 
         $result = $this->validator->validateContentCreation($validData);
@@ -60,9 +62,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Hello World\n\nThis is a test.'
-                ]
-            ]
+                    'source' => '# Hello World\n\nThis is a test.',
+                ],
+            ],
         ];
 
         $result = $this->validatorWithBlockRegistry->validateContentCreation($validData);
@@ -78,9 +80,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Hello World'
-                ]
-            ]
+                    'source' => '# Hello World',
+                ],
+            ],
         ];
 
         $result = $this->validator->validateContentCreation($invalidData);
@@ -97,9 +99,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Hello World'
-                ]
-            ]
+                    'source' => '# Hello World',
+                ],
+            ],
         ];
 
         $result = $this->validator->validateContentCreation($invalidData);
@@ -117,9 +119,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Hello World'
-                ]
-            ]
+                    'source' => '# Hello World',
+                ],
+            ],
         ];
 
         $result = $this->validator->validateContentCreation($invalidData);
@@ -137,9 +139,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Hello World'
-                ]
-            ]
+                    'source' => '# Hello World',
+                ],
+            ],
         ];
 
         $result = $this->validator->validateContentCreation($invalidData);
@@ -154,7 +156,7 @@ final class SymfonyValidatorAdapterTest extends TestCase
         $invalidData = [
             'type' => 'note',
             'title' => 'Test Note',
-            'blocks' => []
+            'blocks' => [],
         ];
 
         $result = $this->validator->validateContentCreation($invalidData);
@@ -167,16 +169,16 @@ final class SymfonyValidatorAdapterTest extends TestCase
     public function testValidateContentCreationWithTooManyBlocks(): void
     {
         $blocks = [];
-        for ($i = 0; $i < 11; $i++) {
+        for ($i = 0; $i < 11; ++$i) {
             $blocks[] = [
                 'kind' => 'markdown',
-                'source' => "# Block {$i}"
+                'source' => "# Block {$i}",
             ];
         }
 
         $invalidData = [
             'type' => 'note',
-            'blocks' => $blocks
+            'blocks' => $blocks,
         ];
 
         $result = $this->validator->validateContentCreation($invalidData);
@@ -193,9 +195,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'invalid',
-                    'source' => '# Hello World'
-                ]
-            ]
+                    'source' => '# Hello World',
+                ],
+            ],
         ];
 
         $result = $this->validator->validateContentCreation($invalidData);
@@ -212,10 +214,11 @@ final class SymfonyValidatorAdapterTest extends TestCase
         foreach ($blockErrors as $error) {
             if (str_contains($error, 'kind must be "markdown"')) {
                 $found = true;
+
                 break;
             }
         }
-        $this->assertTrue($found, 'Expected error message not found. Actual errors: ' . implode(', ', $blockErrors));
+        $this->assertTrue($found, 'Expected error message not found. Actual errors: '.implode(', ', $blockErrors));
     }
 
     public function testValidateContentCreationWithEmptyBlockSource(): void
@@ -225,9 +228,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => ''
-                ]
-            ]
+                    'source' => '',
+                ],
+            ],
         ];
 
         $result = $this->validator->validateContentCreation($invalidData);
@@ -240,10 +243,11 @@ final class SymfonyValidatorAdapterTest extends TestCase
         foreach ($blockErrors as $error) {
             if (str_contains($error, 'source is required')) {
                 $found = true;
+
                 break;
             }
         }
-        $this->assertTrue($found, 'Expected error message not found. Actual errors: ' . implode(', ', $blockErrors));
+        $this->assertTrue($found, 'Expected error message not found. Actual errors: '.implode(', ', $blockErrors));
     }
 
     public function testValidateContentCreationWithScriptTag(): void
@@ -253,9 +257,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Hello <script>alert("xss")</script>'
-                ]
-            ]
+                    'source' => '# Hello <script>alert("xss")</script>',
+                ],
+            ],
         ];
 
         $result = $this->validator->validateContentCreation($invalidData);
@@ -268,10 +272,11 @@ final class SymfonyValidatorAdapterTest extends TestCase
         foreach ($blockErrors as $error) {
             if (str_contains($error, 'Script tags are not allowed in markdown content')) {
                 $found = true;
+
                 break;
             }
         }
-        $this->assertTrue($found, 'Expected error message not found. Actual errors: ' . implode(', ', $blockErrors));
+        $this->assertTrue($found, 'Expected error message not found. Actual errors: '.implode(', ', $blockErrors));
     }
 
     public function testValidateContentCreationWithInvalidUtf8(): void
@@ -281,9 +286,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => "# Hello \xFF\xFE Invalid UTF-8"
-                ]
-            ]
+                    'source' => "# Hello \xFF\xFE Invalid UTF-8",
+                ],
+            ],
         ];
 
         $result = $this->validator->validateContentCreation($invalidData);
@@ -296,16 +301,17 @@ final class SymfonyValidatorAdapterTest extends TestCase
         foreach ($blockErrors as $error) {
             if (str_contains($error, 'Content must be valid UTF-8 encoded text')) {
                 $found = true;
+
                 break;
             }
         }
-        $this->assertTrue($found, 'Expected error message not found. Actual errors: ' . implode(', ', $blockErrors));
+        $this->assertTrue($found, 'Expected error message not found. Actual errors: '.implode(', ', $blockErrors));
     }
 
     public function testValidateContentUpdateAllowsPartialData(): void
     {
         $partialData = [
-            'title' => 'Updated Title'
+            'title' => 'Updated Title',
         ];
 
         $result = $this->validator->validateContentUpdate($partialData);
@@ -321,9 +327,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Updated Content'
-                ]
-            ]
+                    'source' => '# Updated Content',
+                ],
+            ],
         ];
 
         $result = $this->validator->validateContentUpdate($updateData);
@@ -336,7 +342,7 @@ final class SymfonyValidatorAdapterTest extends TestCase
     {
         $invalidData = [
             'type' => 'invalid-type!',
-            'title' => str_repeat('x', 300)
+            'title' => str_repeat('x', 300),
         ];
 
         $result = $this->validator->validateContentUpdate($invalidData);
@@ -352,7 +358,7 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'type' => '',
             'title' => str_repeat('x', 300),
             'summary' => str_repeat('x', 1100),
-            'blocks' => []
+            'blocks' => [],
         ];
 
         $result = $this->validator->validateContentCreation($invalidData);
@@ -378,9 +384,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Hello World'
-                ]
-            ]
+                    'source' => '# Hello World',
+                ],
+            ],
         ];
 
         $result = $this->validator->validateContentCreation($invalidData);
@@ -398,9 +404,9 @@ final class SymfonyValidatorAdapterTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Hello World'
-                ]
-            ]
+                    'source' => '# Hello World',
+                ],
+            ],
         ];
 
         $result = $this->validator->validateContentCreation($validData);

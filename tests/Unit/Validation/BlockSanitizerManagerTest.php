@@ -10,6 +10,8 @@ use PortableContent\Validation\BlockSanitizerManager;
 
 /**
  * @internal
+ *
+ * @coversNothing
  */
 final class BlockSanitizerManagerTest extends TestCase
 {
@@ -128,12 +130,12 @@ final class BlockSanitizerManagerTest extends TestCase
         $blocks = [
             [
                 'kind' => 'test',
-                'source' => 'Content 1'
+                'source' => 'Content 1',
             ],
             [
                 'kind' => 'test',
-                'source' => 'Content 2'
-            ]
+                'source' => 'Content 2',
+            ],
         ];
 
         $result = $this->manager->sanitizeBlocks($blocks);
@@ -155,13 +157,13 @@ final class BlockSanitizerManagerTest extends TestCase
         $blocksWithInvalidData = [
             [
                 'kind' => 'test',
-                'source' => 'Valid content'
+                'source' => 'Valid content',
             ],
             'invalid_block', // This should cause an exception
             [
                 'kind' => 'test',
-                'source' => 'Another valid content'
-            ]
+                'source' => 'Another valid content',
+            ],
         ];
 
         // @phpstan-ignore-next-line - Intentionally passing invalid data to test exception
@@ -176,8 +178,8 @@ final class BlockSanitizerManagerTest extends TestCase
         $blocks = [
             [
                 'kind' => 'unknown',
-                'source' => 'Content'
-            ]
+                'source' => 'Content',
+            ],
         ];
 
         $this->manager->sanitizeBlocks($blocks);
@@ -220,8 +222,6 @@ final class BlockSanitizerManagerTest extends TestCase
         $blockData = ['kind' => 123, 'source' => 'content'];
         $this->manager->sanitizeBlock($blockData);
     }
-
-
 
     private function createMockSanitizer(string $blockType): BlockSanitizerInterface
     {

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace PortableContent\Tests\Unit\Block;
 
-use PortableContent\Tests\TestCase;
 use PortableContent\Block\AbstractBlockSanitizer;
+use PortableContent\Tests\TestCase;
 
 /**
  * @internal
+ *
+ * @coversNothing
  */
 final class AbstractBlockSanitizerTest extends TestCase
 {
@@ -26,12 +28,12 @@ final class AbstractBlockSanitizerTest extends TestCase
             ['input' => "Hello\x00World", 'expected' => 'HelloWorld'],
             ['input' => "Line 1\r\nLine 2", 'expected' => "Line 1\nLine 2"],
             ['input' => "Test\x01Content", 'expected' => 'TestContent'],
-            ['input' => "Normal content", 'expected' => 'Normal content'],
+            ['input' => 'Normal content', 'expected' => 'Normal content'],
         ];
 
         foreach ($testCases as $case) {
             $result = $this->sanitizer->testApplyBasicSanitization($case['input']);
-            $this->assertEquals($case['expected'], $result, "Failed for input: " . json_encode($case['input']));
+            $this->assertEquals($case['expected'], $result, 'Failed for input: '.json_encode($case['input']));
         }
     }
 
@@ -48,7 +50,7 @@ final class AbstractBlockSanitizerTest extends TestCase
 
         foreach ($testCases as $case) {
             $result = $this->sanitizer->testApplyBasicKindSanitization($case['input']);
-            $this->assertEquals($case['expected'], $result, "Failed for input: " . json_encode($case['input']));
+            $this->assertEquals($case['expected'], $result, 'Failed for input: '.json_encode($case['input']));
         }
     }
 
@@ -56,7 +58,7 @@ final class AbstractBlockSanitizerTest extends TestCase
     {
         $validData = [
             'kind' => 'markdown',
-            'source' => '# Hello World'
+            'source' => '# Hello World',
         ];
 
         // Should not throw exception
@@ -70,7 +72,7 @@ final class AbstractBlockSanitizerTest extends TestCase
         $this->expectExceptionMessage('Block data must contain a "kind" field');
 
         $invalidData = [
-            'source' => '# Hello World'
+            'source' => '# Hello World',
         ];
 
         $this->sanitizer->testValidateBlockData($invalidData);
@@ -82,7 +84,7 @@ final class AbstractBlockSanitizerTest extends TestCase
         $this->expectExceptionMessage('Block data must contain a "source" field');
 
         $invalidData = [
-            'kind' => 'markdown'
+            'kind' => 'markdown',
         ];
 
         $this->sanitizer->testValidateBlockData($invalidData);
@@ -95,7 +97,7 @@ final class AbstractBlockSanitizerTest extends TestCase
 
         $invalidData = [
             'kind' => 123,
-            'source' => '# Hello World'
+            'source' => '# Hello World',
         ];
 
         $this->sanitizer->testValidateBlockData($invalidData);
@@ -108,7 +110,7 @@ final class AbstractBlockSanitizerTest extends TestCase
 
         $invalidData = [
             'kind' => 'markdown',
-            'source' => 123
+            'source' => 123,
         ];
 
         $this->sanitizer->testValidateBlockData($invalidData);
@@ -116,7 +118,7 @@ final class AbstractBlockSanitizerTest extends TestCase
 }
 
 /**
- * Testable implementation of AbstractBlockSanitizer for testing protected methods
+ * Testable implementation of AbstractBlockSanitizer for testing protected methods.
  */
 class TestableBlockSanitizer extends AbstractBlockSanitizer
 {
@@ -128,7 +130,7 @@ class TestableBlockSanitizer extends AbstractBlockSanitizer
 
     public function supports(string $blockType): bool
     {
-        return $blockType === 'test';
+        return 'test' === $blockType;
     }
 
     public function getBlockType(): string

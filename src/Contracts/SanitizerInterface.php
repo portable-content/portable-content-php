@@ -14,4 +14,14 @@ interface SanitizerInterface
      * @return array<string, mixed>
      */
     public function sanitize(array $data): array;
+
+    /**
+     * Get statistics about the sanitization process.
+     *
+     * @param array<string, mixed> $originalData  Original input data
+     * @param array<string, mixed> $sanitizedData Sanitized output data
+     *
+     * @return array<string, mixed> Statistics about the sanitization process
+     */
+    public function getSanitizationStats(array $originalData, array $sanitizedData): array;
 }

@@ -75,7 +75,7 @@ final class BlockValidatorManager
      *
      * @param array<array<string, mixed>> $blocks Array of block data arrays
      *
-     * @throws ValidationException if validation fails for any block
+     * @throws ValidationException       if validation fails for any block
      * @throws \InvalidArgumentException if a block type has no registered validator
      */
     public function validateBlocks(array $blocks): void
@@ -83,7 +83,7 @@ final class BlockValidatorManager
         foreach ($blocks as $index => $blockData) {
             if (!is_array($blockData)) {
                 throw new \InvalidArgumentException(
-                    "Invalid block data at index {$index}: expected array, got " . gettype($blockData)
+                    "Invalid block data at index {$index}: expected array, got ".gettype($blockData)
                 );
             }
 
@@ -101,7 +101,7 @@ final class BlockValidatorManager
      *
      * @param array<string, mixed> $blockData Block data containing 'kind' and 'source' fields
      *
-     * @throws ValidationException if validation fails
+     * @throws ValidationException       if validation fails
      * @throws \InvalidArgumentException if the block type has no registered validator
      */
     public function validateBlock(array $blockData): void
@@ -117,7 +117,7 @@ final class BlockValidatorManager
         }
 
         $validator = $this->getValidator($blockType);
-        if ($validator === null) {
+        if (null === $validator) {
             throw new \InvalidArgumentException("No validator registered for block type: {$blockType}");
         }
 
