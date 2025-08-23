@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-01-23
+
+### 🧹 Repository Architecture Cleanup
+
+This release focuses on simplifying the repository architecture by removing speculative vector database implementations and focusing on a robust SQLite-only foundation.
+
+### ✨ Added
+- **Enhanced ContentRepositoryInterface** - Added `getCapabilities()` and `supports()` methods for feature discovery
+- **Repository Capability System** - Standardized way to query repository features
+- **Improved Error Handling** - More comprehensive exception handling in repository operations
+
+### 🔄 Changed
+- **Simplified Architecture** - Removed speculative Weaviate/vector database implementations
+- **SQLite Focus** - Concentrated on making SQLite repository production-ready
+- **Library Best Practices** - Added `composer.lock` to `.gitignore` for better library distribution
+
+### 🗑️ Removed
+- **Weaviate Dependencies** - Removed `zestic/weaviate-php-client` and related code
+- **Vector Database Code** - Removed speculative vector repository implementations
+- **Unused Directories** - Cleaned up empty migration and storage directories
+- **composer.lock** - Removed from version control (library best practice)
+
+### 🔧 Technical Improvements
+- **Cleaner Codebase** - Reduced from 6,684 lines to focused, maintainable code
+- **Better Testing** - All 315 tests passing with improved repository coverage
+- **Enhanced Documentation** - Updated architecture documentation to reflect simplified approach
+
+### 📊 Impact
+- **Code Reduction** - Removed 6,684 lines of speculative code
+- **Focused Implementation** - Single, robust SQLite repository implementation
+- **Better Maintainability** - Cleaner, more focused codebase
+- **Production Ready** - Solid foundation for real-world usage
+
+### 🎯 Philosophy Shift
+This release represents a strategic decision to avoid over-engineering and focus on delivering a solid, tested foundation. Vector database capabilities will be added when there's genuine demand, ensuring every line of code serves a real purpose.
+
+### 📝 Migration Notes
+- No breaking changes to public APIs
+- All existing functionality preserved
+- Repository interface enhanced with capability discovery
+- Tests and documentation updated accordingly
+
+---
+
 ## [0.1.0] - 2025-01-23
 
 ### 🎉 Initial Release - Phase 1A Complete
@@ -146,4 +190,4 @@ The library is ready for production use in content management applications requi
 
 ---
 
-**Full Changelog**: https://github.com/portable-content/portable-content-php/commits/v0.1.0
+**Full Changelog**: https://github.com/portable-content/portable-content-php/compare/v0.1.0...v0.2.0

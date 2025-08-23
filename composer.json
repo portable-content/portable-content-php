@@ -1,9 +1,9 @@
 {
     "name": "portable-content/portable-content-php",
-    "description": "PHP implementation of portable content system - Phase 1A Complete",
+    "description": "PHP implementation of portable content system - Refined Architecture v0.2.0",
     "license": "Apache-2.0",
     "type": "library",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "keywords": [
         "content-management",
         "validation",
