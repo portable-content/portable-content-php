@@ -195,15 +195,30 @@ composer composer-normalize-fix # Fix composer.json format
 
 ```
 src/                          # Source code
-tests/                        # Test files
+├── Block/                   # Block implementations (MarkdownBlock)
+├── Contracts/               # Interfaces and contracts
+├── Exception/               # Exception classes
+├── Validation/              # Validation and sanitization system
+└── ContentItem.php          # Main domain object
+tests/                        # Test files (315 tests, 1,283 assertions)
 ├── Support/                  # Test support utilities
-│   ├── Database/            # SQLite database helpers (for testing)
-│   └── migrations/          # Test database schema migrations
+│   ├── Database/            # SQLite database helpers
+│   └── Repository/          # Repository factory for testing
 ├── Unit/                    # Unit tests
-└── Integration/             # Integration tests
-storage/                     # SQLite database files (for development)
+└── Integration/             # Integration tests (end-to-end workflows)
+docs/                        # Complete documentation
+├── getting-started.md       # Setup and basic usage
+├── api-reference.md         # Complete API documentation
+├── validation.md            # Validation system guide
+├── examples.md              # Usage examples and patterns
+├── architecture.md          # System design and components
+├── repository.md            # Repository pattern details
+└── future-features.md       # Roadmap and planned features
+storage/                     # SQLite database files
 bin/                         # CLI tools
 └── migrate.php              # Database migration tool
+migrations/                  # Database schema migrations
+llms.txt                     # Guide for AI/LLM developers
 ```
 
 ## Development Status
