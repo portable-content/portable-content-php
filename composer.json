@@ -1,14 +1,31 @@
 {
     "name": "portable-content/portable-content-php",
-    "description": "PHP implementation of portable content system",
+    "description": "PHP implementation of portable content system - Phase 1A Complete",
     "license": "Apache-2.0",
-    "type": "project",
+    "type": "library",
+    "version": "0.1.0",
+    "keywords": [
+        "content-management",
+        "validation",
+        "sanitization",
+        "markdown",
+        "php",
+        "sqlite",
+        "repository-pattern"
+    ],
     "authors": [
         {
             "name": "Corvus Meliora",
-            "email": "corvus@zestic.com"
+            "email": "corvus@zestic.com",
+            "role": "Developer"
         }
     ],
+    "homepage": "https://github.com/portable-content/portable-content-php",
+    "support": {
+        "issues": "https://github.com/portable-content/portable-content-php/issues",
+        "source": "https://github.com/portable-content/portable-content-php",
+        "docs": "https://github.com/portable-content/portable-content-php/tree/main/docs"
+    },
     "require": {
         "php": "^8.3",
         "ramsey/uuid": "^4.7",
