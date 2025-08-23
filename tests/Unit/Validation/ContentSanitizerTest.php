@@ -21,17 +21,17 @@ final class ContentSanitizerTest extends TestCase
     {
         parent::setUp();
 
-        // Create basic block registry for required parameter
-        $basicRegistry = new BlockSanitizerManager([
+        // Create basic block manager for required parameter
+        $basicManager = new BlockSanitizerManager([
             new MarkdownBlockSanitizer()
         ]);
-        $this->sanitizer = new ContentSanitizer($basicRegistry);
+        $this->sanitizer = new ContentSanitizer($basicManager);
 
-        // Create sanitizer with block registry (same as basic for now)
-        $blockRegistry = new BlockSanitizerManager([
+        // Create sanitizer with block manager (same as basic for now)
+        $blockManager = new BlockSanitizerManager([
             new MarkdownBlockSanitizer()
         ]);
-        $this->sanitizerWithRegistry = new ContentSanitizer($blockRegistry);
+        $this->sanitizerWithRegistry = new ContentSanitizer($blockManager);
     }
 
     public function testSanitizeValidData(): void

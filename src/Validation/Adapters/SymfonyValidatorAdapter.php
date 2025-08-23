@@ -6,7 +6,7 @@ namespace PortableContent\Validation\Adapters;
 
 use PortableContent\Contracts\ContentValidatorInterface;
 use PortableContent\Validation\ValueObjects\ValidationResult;
-use PortableContent\Validation\BlockValidatorRegistry;
+use PortableContent\Validation\BlockValidatorManager;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
@@ -16,7 +16,7 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
 {
     public function __construct(
         private readonly ValidatorInterface $validator,
-        private readonly ?BlockValidatorRegistry $blockValidatorRegistry = null
+        private readonly ?BlockValidatorManager $blockValidatorManager = null
     ) {}
 
     public function validateContentCreation(array $data): ValidationResult
@@ -99,7 +99,7 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
         $result = empty($errors) ? ValidationResult::success() : ValidationResult::failure($errors);
 
         // If basic validation passes and we have block validators, validate blocks individually
-        if ($result->isValid() && $this->blockValidatorRegistry !== null && isset($data['blocks']) && is_array($data['blocks'])) {
+        if ($result->isValid() && $this->blockValidatorManager !== null && isset($data['blocks']) && is_array($data['blocks'])) {
             $result = $this->validateBlocksWithRegistry($data['blocks'], $result);
         }
 
@@ -172,7 +172,7 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
         $result = empty($errors) ? ValidationResult::success() : ValidationResult::failure($errors);
 
         // If basic validation passes and we have block validators, validate blocks individually
-        if ($result->isValid() && $this->blockValidatorRegistry !== null && isset($data['blocks']) && is_array($data['blocks'])) {
+        if ($result->isValid() && $this->blockValidatorManager !== null && isset($data['blocks']) && is_array($data['blocks'])) {
             $result = $this->validateBlocksWithRegistry($data['blocks'], $result);
         }
 
@@ -218,14 +218,16 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
                 continue;
             }
 
-            if ($this->blockValidatorRegistry !== null && $this->blockValidatorRegistry->hasValidator($blockType)) {
+            if ($this->blockValidatorManager !== null && $this->blockValidatorManager->hasValidator($blockType)) {
                 try {
-                    $blockValidator = $this->blockValidatorRegistry->getValidator($blockType);
-                    $blockResult = $blockValidator->validate($blockData);
+                    $blockValidator = $this->blockValidatorManager->getValidator($blockType);
+                    if ($blockValidator !== null) {
+                        $blockResult = $blockValidator->validate($blockData);
 
-                    if (!$blockResult->isValid()) {
-                        // Merge block validation errors with current result
-                        $currentResult = $currentResult->merge($blockResult);
+                        if (!$blockResult->isValid()) {
+                            // Merge block validation errors with current result
+                            $currentResult = $currentResult->merge($blockResult);
+                        }
                     }
                 } catch (\Exception $e) {
                     // If block validation fails, add a generic error

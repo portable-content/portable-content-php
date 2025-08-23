@@ -5,17 +5,16 @@ declare(strict_types=1);
 namespace PortableContent\Tests\Unit\Validation;
 
 use PortableContent\Contracts\Block\BlockValidatorInterface;
-use PortableContent\Exception\ValidationException;
 use PortableContent\Tests\TestCase;
-use PortableContent\Validation\BlockValidatorRegistry;
+use PortableContent\Validation\BlockValidatorManager;
 use PortableContent\Validation\ValueObjects\ValidationResult;
 
 /**
  * @internal
  */
-final class BlockValidatorRegistryTest extends TestCase
+final class BlockValidatorManagerTest extends TestCase
 {
-    private BlockValidatorRegistry $registry;
+    private BlockValidatorManager $manager;
     private BlockValidatorInterface $mockValidator;
 
     protected function setUp(): void
@@ -39,61 +38,59 @@ final class BlockValidatorRegistryTest extends TestCase
             }
         };
 
-        $this->registry = new BlockValidatorRegistry();
+        $this->manager = new BlockValidatorManager();
     }
 
     public function testConstructorWithValidators(): void
     {
-        $registry = new BlockValidatorRegistry([$this->mockValidator]);
+        $manager = new BlockValidatorManager([$this->mockValidator]);
 
-        $this->assertTrue($registry->hasValidator('test'));
-        $this->assertSame($this->mockValidator, $registry->getValidator('test'));
+        $this->assertTrue($manager->hasValidator('test'));
+        $this->assertSame($this->mockValidator, $manager->getValidator('test'));
     }
 
     public function testConstructorWithEmptyArray(): void
     {
-        $registry = new BlockValidatorRegistry([]);
+        $manager = new BlockValidatorManager([]);
 
-        $this->assertEmpty($registry->getSupportedBlockTypes());
-        $this->assertEmpty($registry->getAllValidators());
+        $this->assertEmpty($manager->getSupportedBlockTypes());
+        $this->assertEmpty($manager->getAllValidators());
     }
 
     public function testRegisterValidator(): void
     {
-        $this->registry->register($this->mockValidator);
+        $this->manager->register($this->mockValidator);
 
-        $this->assertTrue($this->registry->hasValidator('test'));
-        $this->assertSame($this->mockValidator, $this->registry->getValidator('test'));
+        $this->assertTrue($this->manager->hasValidator('test'));
+        $this->assertSame($this->mockValidator, $this->manager->getValidator('test'));
     }
 
     public function testRegisterDuplicateValidatorThrowsException(): void
     {
-        $this->registry->register($this->mockValidator);
+        $this->manager->register($this->mockValidator);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Block validator for type 'test' is already registered");
 
-        $this->registry->register($this->mockValidator);
+        $this->manager->register($this->mockValidator);
     }
 
-    public function testGetValidatorThrowsExceptionForUnregisteredType(): void
+    public function testGetValidatorReturnsNullForUnregisteredType(): void
     {
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage("No validator registered for block type 'nonexistent'");
-
-        $this->registry->getValidator('nonexistent');
+        $result = $this->manager->getValidator('nonexistent');
+        $this->assertNull($result);
     }
 
     public function testHasValidatorReturnsFalseForUnregisteredType(): void
     {
-        $this->assertFalse($this->registry->hasValidator('nonexistent'));
+        $this->assertFalse($this->manager->hasValidator('nonexistent'));
     }
 
     public function testHasValidatorReturnsTrueForRegisteredType(): void
     {
-        $this->registry->register($this->mockValidator);
+        $this->manager->register($this->mockValidator);
 
-        $this->assertTrue($this->registry->hasValidator('test'));
+        $this->assertTrue($this->manager->hasValidator('test'));
     }
 
     public function testGetSupportedBlockTypes(): void
@@ -101,10 +98,10 @@ final class BlockValidatorRegistryTest extends TestCase
         $validator1 = $this->createMockValidator('markdown');
         $validator2 = $this->createMockValidator('code');
 
-        $this->registry->register($validator1);
-        $this->registry->register($validator2);
+        $this->manager->register($validator1);
+        $this->manager->register($validator2);
 
-        $supportedTypes = $this->registry->getSupportedBlockTypes();
+        $supportedTypes = $this->manager->getSupportedBlockTypes();
 
         $this->assertCount(2, $supportedTypes);
         $this->assertContains('markdown', $supportedTypes);
@@ -116,10 +113,10 @@ final class BlockValidatorRegistryTest extends TestCase
         $validator1 = $this->createMockValidator('markdown');
         $validator2 = $this->createMockValidator('code');
 
-        $this->registry->register($validator1);
-        $this->registry->register($validator2);
+        $this->manager->register($validator1);
+        $this->manager->register($validator2);
 
-        $validators = $this->registry->getAllValidators();
+        $validators = $this->manager->getAllValidators();
 
         $this->assertCount(2, $validators);
         $this->assertContains($validator1, $validators);
@@ -128,12 +125,12 @@ final class BlockValidatorRegistryTest extends TestCase
 
     public function testGetSupportedBlockTypesWithEmptyRegistry(): void
     {
-        $this->assertEmpty($this->registry->getSupportedBlockTypes());
+        $this->assertEmpty($this->manager->getSupportedBlockTypes());
     }
 
     public function testGetAllValidatorsWithEmptyRegistry(): void
     {
-        $this->assertEmpty($this->registry->getAllValidators());
+        $this->assertEmpty($this->manager->getAllValidators());
     }
 
     public function testMultipleValidatorsWithDifferentTypes(): void
@@ -142,18 +139,18 @@ final class BlockValidatorRegistryTest extends TestCase
         $codeValidator = $this->createMockValidator('code');
         $imageValidator = $this->createMockValidator('image');
 
-        $this->registry->register($markdownValidator);
-        $this->registry->register($codeValidator);
-        $this->registry->register($imageValidator);
+        $this->manager->register($markdownValidator);
+        $this->manager->register($codeValidator);
+        $this->manager->register($imageValidator);
 
-        $this->assertTrue($this->registry->hasValidator('markdown'));
-        $this->assertTrue($this->registry->hasValidator('code'));
-        $this->assertTrue($this->registry->hasValidator('image'));
-        $this->assertFalse($this->registry->hasValidator('video'));
+        $this->assertTrue($this->manager->hasValidator('markdown'));
+        $this->assertTrue($this->manager->hasValidator('code'));
+        $this->assertTrue($this->manager->hasValidator('image'));
+        $this->assertFalse($this->manager->hasValidator('video'));
 
-        $this->assertSame($markdownValidator, $this->registry->getValidator('markdown'));
-        $this->assertSame($codeValidator, $this->registry->getValidator('code'));
-        $this->assertSame($imageValidator, $this->registry->getValidator('image'));
+        $this->assertSame($markdownValidator, $this->manager->getValidator('markdown'));
+        $this->assertSame($codeValidator, $this->manager->getValidator('code'));
+        $this->assertSame($imageValidator, $this->manager->getValidator('image'));
     }
 
     private function createMockValidator(string $blockType): BlockValidatorInterface

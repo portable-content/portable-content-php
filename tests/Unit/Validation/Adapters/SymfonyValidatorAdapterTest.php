@@ -6,7 +6,7 @@ namespace PortableContent\Tests\Unit\Validation\Adapters;
 
 use PortableContent\Tests\TestCase;
 use PortableContent\Validation\Adapters\SymfonyValidatorAdapter;
-use PortableContent\Validation\BlockValidatorRegistry;
+use PortableContent\Validation\BlockValidatorManager;
 use PortableContent\Block\Markdown\MarkdownBlockValidator;
 use Symfony\Component\Validator\Validation;
 
@@ -25,11 +25,11 @@ final class SymfonyValidatorAdapterTest extends TestCase
         $symfonyValidator = Validation::createValidator();
         $this->validator = new SymfonyValidatorAdapter($symfonyValidator);
         
-        // Create validator with block registry for enhanced testing
-        $blockRegistry = new BlockValidatorRegistry([
+        // Create validator with block manager for enhanced testing
+        $blockManager = new BlockValidatorManager([
             new MarkdownBlockValidator()
         ]);
-        $this->validatorWithBlockRegistry = new SymfonyValidatorAdapter($symfonyValidator, $blockRegistry);
+        $this->validatorWithBlockRegistry = new SymfonyValidatorAdapter($symfonyValidator, $blockManager);
     }
 
     public function testValidateContentCreationWithValidData(): void
