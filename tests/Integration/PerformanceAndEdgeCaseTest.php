@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace PortableContent\Tests\Integration;
 
 use PortableContent\Block\Markdown\MarkdownBlock;
+use PortableContent\Block\Markdown\MarkdownBlockSanitizer;
+use PortableContent\Block\Markdown\MarkdownBlockValidator;
 use PortableContent\ContentItem;
 use PortableContent\Contracts\ContentRepositoryInterface;
 use PortableContent\Tests\Support\Repository\RepositoryFactory;
@@ -14,12 +16,12 @@ use PortableContent\Validation\BlockSanitizerManager;
 use PortableContent\Validation\BlockValidatorManager;
 use PortableContent\Validation\ContentSanitizer;
 use PortableContent\Validation\ContentValidationService;
-use PortableContent\Block\Markdown\MarkdownBlockSanitizer;
-use PortableContent\Block\Markdown\MarkdownBlockValidator;
 use Symfony\Component\Validator\Validation;
 
 /**
  * Performance and edge case tests for the complete system.
+ *
+ * @internal
  */
 final class PerformanceAndEdgeCaseTest extends TestCase
 {
@@ -33,12 +35,12 @@ final class PerformanceAndEdgeCaseTest extends TestCase
         $this->repository = RepositoryFactory::createInMemoryRepository();
 
         $blockSanitizerManager = new BlockSanitizerManager([
-            new MarkdownBlockSanitizer()
+            new MarkdownBlockSanitizer(),
         ]);
         $contentSanitizer = new ContentSanitizer($blockSanitizerManager);
 
         $blockValidatorManager = new BlockValidatorManager([
-            new MarkdownBlockValidator()
+            new MarkdownBlockValidator(),
         ]);
         $symfonyValidator = Validation::createValidator();
         $contentValidator = new SymfonyValidatorAdapter($symfonyValidator, $blockValidatorManager);
@@ -50,8 +52,8 @@ final class PerformanceAndEdgeCaseTest extends TestCase
     {
         // Test with large content that's still within reasonable limits
         $largeMarkdownContent = str_repeat("# Section\n\nThis is a large section with lots of content. ", 100);
-        $largeMarkdownContent .= "\n\n" . str_repeat("- List item with substantial content\n", 50);
-        
+        $largeMarkdownContent .= "\n\n".str_repeat("- List item with substantial content\n", 50);
+
         $inputData = [
             'type' => 'article',
             'title' => 'Large Content Test',
@@ -59,21 +61,28 @@ final class PerformanceAndEdgeCaseTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => $largeMarkdownContent
-                ]
-            ]
+                    'source' => $largeMarkdownContent,
+                ],
+            ],
         ];
 
         $startTime = microtime(true);
-        
+
         // Validate and sanitize
         $validationResult = $this->validationService->validateContentCreation($inputData);
         $this->assertTrue($validationResult->isValid());
-        
+
         $sanitizedData = $validationResult->getData();
         $this->assertIsArray($sanitizedData);
 
         // Create domain objects
+        $this->assertIsArray($sanitizedData['blocks']);
+        $this->assertIsArray($sanitizedData['blocks'][0]);
+        $this->assertIsString($sanitizedData['blocks'][0]['source']);
+        $this->assertIsString($sanitizedData['type']);
+        $this->assertIsString($sanitizedData['title']);
+        $this->assertIsString($sanitizedData['summary']);
+
         $block = MarkdownBlock::create($sanitizedData['blocks'][0]['source']);
         $content = ContentItem::create(
             $sanitizedData['type'],
@@ -87,14 +96,16 @@ final class PerformanceAndEdgeCaseTest extends TestCase
 
         // Retrieve from database
         $retrieved = $this->repository->findById($content->id);
-        
+
         $endTime = microtime(true);
         $processingTime = $endTime - $startTime;
 
         $this->assertNotNull($retrieved);
         $this->assertEquals($content->id, $retrieved->id);
-        $this->assertStringContainsString('Section', $retrieved->blocks[0]->source);
-        
+        /** @var MarkdownBlock $firstBlock */
+        $firstBlock = $retrieved->blocks[0];
+        $this->assertStringContainsString('Section', $firstBlock->source);
+
         // Performance assertion - should complete within reasonable time (adjust as needed)
         $this->assertLessThan(1.0, $processingTime, 'Large content processing should complete within 1 second');
     }
@@ -102,11 +113,11 @@ final class PerformanceAndEdgeCaseTest extends TestCase
     public function testMultipleContentItemsPerformance(): void
     {
         $startTime = microtime(true);
-        
+
         $contentIds = [];
-        
+
         // Create and save multiple content items
-        for ($i = 1; $i <= 50; $i++) {
+        for ($i = 1; $i <= 50; ++$i) {
             $inputData = [
                 'type' => 'note',
                 'title' => "Test Note {$i}",
@@ -114,9 +125,9 @@ final class PerformanceAndEdgeCaseTest extends TestCase
                 'blocks' => [
                     [
                         'kind' => 'markdown',
-                        'source' => "# Note {$i}\n\nThis is the content for note number {$i}."
-                    ]
-                ]
+                        'source' => "# Note {$i}\n\nThis is the content for note number {$i}.",
+                    ],
+                ],
             ];
 
             $validationResult = $this->validationService->validateContentCreation($inputData);
@@ -124,6 +135,12 @@ final class PerformanceAndEdgeCaseTest extends TestCase
 
             $sanitizedData = $validationResult->getData();
             $this->assertIsArray($sanitizedData, "Sanitized data should be array for item {$i}");
+            $this->assertIsArray($sanitizedData['blocks']);
+            $this->assertIsArray($sanitizedData['blocks'][0]);
+            $this->assertIsString($sanitizedData['blocks'][0]['source']);
+            $this->assertIsString($sanitizedData['type']);
+            $this->assertIsString($sanitizedData['title']);
+            $this->assertIsString($sanitizedData['summary']);
 
             $block = MarkdownBlock::create($sanitizedData['blocks'][0]['source']);
             $content = ContentItem::create(
@@ -137,7 +154,7 @@ final class PerformanceAndEdgeCaseTest extends TestCase
             $contentIds[] = $content->id;
 
             // Verify save worked by checking count periodically
-            if ($i % 10 === 0) {
+            if (0 === $i % 10) {
                 $currentCount = count($this->repository->findAll(100)); // Use higher limit
                 $this->assertEquals($i, $currentCount, "Expected {$i} items after saving item {$i}, got {$currentCount}");
             }
@@ -145,7 +162,7 @@ final class PerformanceAndEdgeCaseTest extends TestCase
 
         // Retrieve all content (with higher limit than default 20)
         $allContent = $this->repository->findAll(100);
-        $this->assertCount(50, $allContent, 'Expected 50 content items, got ' . count($allContent));
+        $this->assertCount(50, $allContent, 'Expected 50 content items, got '.count($allContent));
 
         // Retrieve individual items
         foreach ($contentIds as $id) {
@@ -169,16 +186,22 @@ final class PerformanceAndEdgeCaseTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => "# Unicode Content 🌍\n\n- Chinese: 你好世界\n- Arabic: مرحبا بالعالم\n- Russian: Привет мир\n- Japanese: こんにちは世界\n- Emoji: 🎉🎊🚀💻📝"
-                ]
-            ]
+                    'source' => "# Unicode Content 🌍\n\n- Chinese: 你好世界\n- Arabic: مرحبا بالعالم\n- Russian: Привет мир\n- Japanese: こんにちは世界\n- Emoji: 🎉🎊🚀💻📝",
+                ],
+            ],
         ];
 
         $validationResult = $this->validationService->validateContentCreation($inputData);
         $this->assertTrue($validationResult->isValid());
-        
+
         $sanitizedData = $validationResult->getData();
         $this->assertIsArray($sanitizedData);
+        $this->assertIsArray($sanitizedData['blocks']);
+        $this->assertIsArray($sanitizedData['blocks'][0]);
+        $this->assertIsString($sanitizedData['blocks'][0]['source']);
+        $this->assertIsString($sanitizedData['type']);
+        $this->assertIsString($sanitizedData['title']);
+        $this->assertIsString($sanitizedData['summary']);
 
         $block = MarkdownBlock::create($sanitizedData['blocks'][0]['source']);
         $content = ContentItem::create(
@@ -192,10 +215,14 @@ final class PerformanceAndEdgeCaseTest extends TestCase
         $retrieved = $this->repository->findById($content->id);
 
         $this->assertNotNull($retrieved);
+        $this->assertNotNull($retrieved->title);
         $this->assertStringContainsString('🚀', $retrieved->title);
+        $this->assertNotNull($retrieved->summary);
         $this->assertStringContainsString('中文', $retrieved->summary);
-        $this->assertStringContainsString('你好世界', $retrieved->blocks[0]->source);
-        $this->assertStringContainsString('🎉', $retrieved->blocks[0]->source);
+        /** @var MarkdownBlock $firstBlock */
+        $firstBlock = $retrieved->blocks[0];
+        $this->assertStringContainsString('你好世界', $firstBlock->source);
+        $this->assertStringContainsString('🎉', $firstBlock->source);
     }
 
     public function testEdgeCaseLineEndingsAndWhitespace(): void
@@ -208,26 +235,32 @@ final class PerformanceAndEdgeCaseTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => "  \t# Title with leading whitespace\t  \r\n\r\n\r\nContent with mixed line endings\r\nand trailing spaces  \t\r\n\r\n\r\n\r\nToo many blank lines"
-                ]
-            ]
+                    'source' => "  \t# Title with leading whitespace\t  \r\n\r\n\r\nContent with mixed line endings\r\nand trailing spaces  \t\r\n\r\n\r\n\r\nToo many blank lines",
+                ],
+            ],
         ];
 
         $validationResult = $this->validationService->validateContentCreation($inputData);
         $this->assertTrue($validationResult->isValid());
-        
+
         $sanitizedData = $validationResult->getData();
         $this->assertIsArray($sanitizedData);
 
         // Verify sanitization cleaned up whitespace and line endings
+        $this->assertIsString($sanitizedData['title']);
         $this->assertEquals('Mixed Whitespace', $sanitizedData['title']);
+        $this->assertIsString($sanitizedData['summary']);
         $this->assertStringNotContainsString("\r", $sanitizedData['summary']);
         $this->assertStringNotContainsString("\n\n\n\n", $sanitizedData['summary']);
-        
+
+        $this->assertIsArray($sanitizedData['blocks']);
+        $this->assertIsArray($sanitizedData['blocks'][0]);
+        $this->assertIsString($sanitizedData['blocks'][0]['source']);
         $sanitizedSource = $sanitizedData['blocks'][0]['source'];
         $this->assertStringNotContainsString("\r", $sanitizedSource);
         $this->assertStringNotContainsString("  \t", $sanitizedSource);
 
+        $this->assertIsString($sanitizedData['type']);
         $block = MarkdownBlock::create($sanitizedSource);
         $content = ContentItem::create(
             $sanitizedData['type'],
@@ -251,16 +284,20 @@ final class PerformanceAndEdgeCaseTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Minimal Content'
-                ]
-            ]
+                    'source' => '# Minimal Content',
+                ],
+            ],
         ];
 
         $validationResult = $this->validationService->validateContentCreation($minimalData);
         $this->assertTrue($validationResult->isValid());
-        
+
         $sanitizedData = $validationResult->getData();
         $this->assertIsArray($sanitizedData);
+        $this->assertIsArray($sanitizedData['blocks']);
+        $this->assertIsArray($sanitizedData['blocks'][0]);
+        $this->assertIsString($sanitizedData['blocks'][0]['source']);
+        $this->assertIsString($sanitizedData['type']);
 
         $block = MarkdownBlock::create($sanitizedData['blocks'][0]['source']);
         $content = ContentItem::create(
@@ -286,13 +323,13 @@ final class PerformanceAndEdgeCaseTest extends TestCase
         $content1Data = [
             'type' => 'note',
             'title' => 'Concurrent Test 1',
-            'blocks' => [['kind' => 'markdown', 'source' => '# Content 1']]
+            'blocks' => [['kind' => 'markdown', 'source' => '# Content 1']],
         ];
 
         $content2Data = [
-            'type' => 'note', 
+            'type' => 'note',
             'title' => 'Concurrent Test 2',
-            'blocks' => [['kind' => 'markdown', 'source' => '# Content 2']]
+            'blocks' => [['kind' => 'markdown', 'source' => '# Content 2']],
         ];
 
         // Create first content
@@ -300,6 +337,11 @@ final class PerformanceAndEdgeCaseTest extends TestCase
         $this->assertTrue($result1->isValid());
         $sanitized1 = $result1->getData();
         $this->assertIsArray($sanitized1);
+        $this->assertIsArray($sanitized1['blocks']);
+        $this->assertIsArray($sanitized1['blocks'][0]);
+        $this->assertIsString($sanitized1['blocks'][0]['source']);
+        $this->assertIsString($sanitized1['type']);
+        $this->assertIsString($sanitized1['title']);
 
         $block1 = MarkdownBlock::create($sanitized1['blocks'][0]['source']);
         $content1 = ContentItem::create($sanitized1['type'], $sanitized1['title'], null, [$block1]);
@@ -310,16 +352,21 @@ final class PerformanceAndEdgeCaseTest extends TestCase
         $this->assertTrue($result2->isValid());
         $sanitized2 = $result2->getData();
         $this->assertIsArray($sanitized2);
+        $this->assertIsArray($sanitized2['blocks']);
+        $this->assertIsArray($sanitized2['blocks'][0]);
+        $this->assertIsString($sanitized2['blocks'][0]['source']);
+        $this->assertIsString($sanitized2['type']);
+        $this->assertIsString($sanitized2['title']);
 
         $block2 = MarkdownBlock::create($sanitized2['blocks'][0]['source']);
         $content2 = ContentItem::create($sanitized2['type'], $sanitized2['title'], null, [$block2]);
         $this->repository->save($content2);
 
         // Rapid read operations
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 10; ++$i) {
             $retrieved1 = $this->repository->findById($content1->id);
             $retrieved2 = $this->repository->findById($content2->id);
-            
+
             $this->assertNotNull($retrieved1);
             $this->assertNotNull($retrieved2);
             $this->assertEquals('Concurrent Test 1', $retrieved1->title);
@@ -329,14 +376,14 @@ final class PerformanceAndEdgeCaseTest extends TestCase
         // Update operations
         $updatedContent1 = $content1->withTitle('Updated Concurrent Test 1');
         $updatedContent2 = $content2->withTitle('Updated Concurrent Test 2');
-        
+
         $this->repository->save($updatedContent1);
         $this->repository->save($updatedContent2);
 
         // Verify updates
         $finalRetrieved1 = $this->repository->findById($content1->id);
         $finalRetrieved2 = $this->repository->findById($content2->id);
-        
+
         $this->assertNotNull($finalRetrieved1);
         $this->assertNotNull($finalRetrieved2);
         $this->assertEquals('Updated Concurrent Test 1', $finalRetrieved1->title);

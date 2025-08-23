@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace PortableContent\Tests\Integration;
 
 use PortableContent\Block\Markdown\MarkdownBlock;
+use PortableContent\Block\Markdown\MarkdownBlockSanitizer;
+use PortableContent\Block\Markdown\MarkdownBlockValidator;
 use PortableContent\ContentItem;
 use PortableContent\Contracts\ContentRepositoryInterface;
 use PortableContent\Tests\Support\Repository\RepositoryFactory;
@@ -14,13 +16,13 @@ use PortableContent\Validation\BlockSanitizerManager;
 use PortableContent\Validation\BlockValidatorManager;
 use PortableContent\Validation\ContentSanitizer;
 use PortableContent\Validation\ContentValidationService;
-use PortableContent\Block\Markdown\MarkdownBlockSanitizer;
-use PortableContent\Block\Markdown\MarkdownBlockValidator;
 use Symfony\Component\Validator\Validation;
 
 /**
  * System validation tests that verify the complete processing pipeline
  * with detailed monitoring and statistics.
+ *
+ * @internal
  */
 final class SystemValidationTest extends TestCase
 {
@@ -34,12 +36,12 @@ final class SystemValidationTest extends TestCase
         $this->repository = RepositoryFactory::createInMemoryRepository();
 
         $blockSanitizerManager = new BlockSanitizerManager([
-            new MarkdownBlockSanitizer()
+            new MarkdownBlockSanitizer(),
         ]);
         $contentSanitizer = new ContentSanitizer($blockSanitizerManager);
 
         $blockValidatorManager = new BlockValidatorManager([
-            new MarkdownBlockValidator()
+            new MarkdownBlockValidator(),
         ]);
         $symfonyValidator = Validation::createValidator();
         $contentValidator = new SymfonyValidatorAdapter($symfonyValidator, $blockValidatorManager);
@@ -56,9 +58,9 @@ final class SystemValidationTest extends TestCase
             'blocks' => [
                 [
                     'kind' => '  MARKDOWN  ',
-                    'source' => "  # System Test  \n\n\n\n  This tests the **complete** pipeline.  \n\n  ## Features  \n\n  - Sanitization  \n  - Validation  \n  - Persistence  "
-                ]
-            ]
+                    'source' => "  # System Test  \n\n\n\n  This tests the **complete** pipeline.  \n\n  ## Features  \n\n  - Sanitization  \n  - Validation  \n  - Persistence  ",
+                ],
+            ],
         ];
 
         // Use the detailed processing method to get full pipeline information
@@ -96,6 +98,13 @@ final class SystemValidationTest extends TestCase
         $this->assertEquals($sanitizedData, $finalResult->getData());
 
         // Create domain objects and test persistence
+        $this->assertIsArray($sanitizedData['blocks']);
+        $this->assertIsArray($sanitizedData['blocks'][0]);
+        $this->assertIsString($sanitizedData['blocks'][0]['source']);
+        $this->assertIsString($sanitizedData['type']);
+        $this->assertIsString($sanitizedData['title']);
+        $this->assertIsString($sanitizedData['summary']);
+
         $block = MarkdownBlock::create($sanitizedData['blocks'][0]['source']);
         $content = ContentItem::create(
             $sanitizedData['type'],
@@ -121,16 +130,21 @@ final class SystemValidationTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '  # Test Content  '
-                ]
-            ]
+                    'source' => '  # Test Content  ',
+                ],
+            ],
         ];
 
         // Test sanitization-only method
         $sanitizedData = $this->validationService->sanitizeContent($rawData);
 
+        $this->assertIsString($sanitizedData['type']);
         $this->assertEquals('note', $sanitizedData['type']);
+        $this->assertIsString($sanitizedData['title']);
         $this->assertEquals('Sanitization Test', $sanitizedData['title']);
+        $this->assertIsArray($sanitizedData['blocks']);
+        $this->assertIsArray($sanitizedData['blocks'][0]);
+        $this->assertIsString($sanitizedData['blocks'][0]['source']);
         $this->assertEquals('# Test Content', $sanitizedData['blocks'][0]['source']);
 
         // Test sanitization statistics
@@ -150,9 +164,9 @@ final class SystemValidationTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Clean Content'
-                ]
-            ]
+                    'source' => '# Clean Content',
+                ],
+            ],
         ];
 
         // Test validation-only method
@@ -171,13 +185,13 @@ final class SystemValidationTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'unsupported_type',
-                    'source' => 'Content'
-                ]
-            ]
+                    'source' => 'Content',
+                ],
+            ],
         ];
 
         $result = $this->validationService->processContentWithDetails($sanitizationErrorData);
-        
+
         $this->assertFalse($result['final_result']->isValid());
         $this->assertArrayHasKey('sanitization', $result['final_result']->getErrors());
         $this->assertEquals([], $result['sanitized_data']);
@@ -190,9 +204,9 @@ final class SystemValidationTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# Valid Content'
-                ]
-            ]
+                    'source' => '# Valid Content',
+                ],
+            ],
         ];
 
         $validationResult = $this->validationService->validateContentCreation($validationErrorData);
@@ -211,33 +225,40 @@ final class SystemValidationTest extends TestCase
             'blocks' => [
                 [
                     'kind' => 'markdown',
-                    'source' => '# API Overview\n\nThis document describes the API.'
+                    'source' => '# API Overview\n\nThis document describes the API.',
                 ],
                 [
                     'kind' => 'markdown',
-                    'source' => '## Authentication\n\nUse Bearer tokens for authentication.'
+                    'source' => '## Authentication\n\nUse Bearer tokens for authentication.',
                 ],
                 [
                     'kind' => 'markdown',
-                    'source' => '## Endpoints\n\n### GET /api/content\n\nRetrieve content items.'
+                    'source' => '## Endpoints\n\n### GET /api/content\n\nRetrieve content items.',
                 ],
                 [
                     'kind' => 'markdown',
-                    'source' => '## Examples\n\n```json\n{\n  "id": "123",\n  "type": "note"\n}\n```'
-                ]
-            ]
+                    'source' => '## Examples\n\n```json\n{\n  "id": "123",\n  "type": "note"\n}\n```',
+                ],
+            ],
         ];
 
         // Process through complete pipeline
         $validationResult = $this->validationService->validateContentCreation($complexData);
         $this->assertTrue($validationResult->isValid());
-        
+
         $sanitizedData = $validationResult->getData();
         $this->assertIsArray($sanitizedData);
 
         // Create domain objects
+        $this->assertIsArray($sanitizedData['blocks']);
+        $this->assertIsString($sanitizedData['type']);
+        $this->assertIsString($sanitizedData['title']);
+        $this->assertIsString($sanitizedData['summary']);
+
         $blocks = [];
         foreach ($sanitizedData['blocks'] as $blockData) {
+            $this->assertIsArray($blockData);
+            $this->assertIsString($blockData['source']);
             $blocks[] = MarkdownBlock::create($blockData['source']);
         }
 
@@ -250,21 +271,30 @@ final class SystemValidationTest extends TestCase
 
         // Test repository operations
         $this->repository->save($content);
-        
+
         $retrieved = $this->repository->findById($content->id);
         $this->assertNotNull($retrieved);
         $this->assertCount(4, $retrieved->blocks);
-        
+
         // Verify each block was persisted correctly
-        $this->assertStringContainsString('API Overview', $retrieved->blocks[0]->source);
-        $this->assertStringContainsString('Authentication', $retrieved->blocks[1]->source);
-        $this->assertStringContainsString('Endpoints', $retrieved->blocks[2]->source);
-        $this->assertStringContainsString('Examples', $retrieved->blocks[3]->source);
+        /** @var MarkdownBlock $block0 */
+        $block0 = $retrieved->blocks[0];
+        /** @var MarkdownBlock $block1 */
+        $block1 = $retrieved->blocks[1];
+        /** @var MarkdownBlock $block2 */
+        $block2 = $retrieved->blocks[2];
+        /** @var MarkdownBlock $block3 */
+        $block3 = $retrieved->blocks[3];
+
+        $this->assertStringContainsString('API Overview', $block0->source);
+        $this->assertStringContainsString('Authentication', $block1->source);
+        $this->assertStringContainsString('Endpoints', $block2->source);
+        $this->assertStringContainsString('Examples', $block3->source);
 
         // Test update with fewer blocks
         $updatedBlocks = [
             MarkdownBlock::create('# Updated Overview\n\nThis is updated content.'),
-            MarkdownBlock::create('## Updated Section\n\nNew information here.')
+            MarkdownBlock::create('## Updated Section\n\nNew information here.'),
         ];
 
         $updatedContent = $content->withBlocks($updatedBlocks);
@@ -273,8 +303,12 @@ final class SystemValidationTest extends TestCase
         $retrievedUpdated = $this->repository->findById($content->id);
         $this->assertNotNull($retrievedUpdated);
         $this->assertCount(2, $retrievedUpdated->blocks);
-        $this->assertStringContainsString('Updated Overview', $retrievedUpdated->blocks[0]->source);
-        $this->assertStringContainsString('Updated Section', $retrievedUpdated->blocks[1]->source);
+        /** @var MarkdownBlock $updatedBlock0 */
+        $updatedBlock0 = $retrievedUpdated->blocks[0];
+        /** @var MarkdownBlock $updatedBlock1 */
+        $updatedBlock1 = $retrievedUpdated->blocks[1];
+        $this->assertStringContainsString('Updated Overview', $updatedBlock0->source);
+        $this->assertStringContainsString('Updated Section', $updatedBlock1->source);
 
         // Test findAll with multiple items
         $allContent = $this->repository->findAll();
@@ -285,7 +319,7 @@ final class SystemValidationTest extends TestCase
         $this->repository->delete($content->id);
         $deletedContent = $this->repository->findById($content->id);
         $this->assertNull($deletedContent);
-        
+
         $emptyList = $this->repository->findAll();
         $this->assertCount(0, $emptyList);
     }
@@ -296,7 +330,7 @@ final class SystemValidationTest extends TestCase
             // Minimal valid input
             [
                 'type' => 'note',
-                'blocks' => [['kind' => 'markdown', 'source' => '# Minimal']]
+                'blocks' => [['kind' => 'markdown', 'source' => '# Minimal']],
             ],
             // Maximum reasonable input
             [
@@ -304,8 +338,8 @@ final class SystemValidationTest extends TestCase
                 'title' => str_repeat('Long Title ', 10),
                 'summary' => str_repeat('Long summary sentence. ', 20),
                 'blocks' => [
-                    ['kind' => 'markdown', 'source' => str_repeat('# Section\n\nContent. ', 50)]
-                ]
+                    ['kind' => 'markdown', 'source' => str_repeat('# Section\n\nContent. ', 50)],
+                ],
             ],
             // Unicode and special characters
             [
@@ -313,33 +347,40 @@ final class SystemValidationTest extends TestCase
                 'title' => '测试 🚀 Тест',
                 'summary' => 'Unicode: 中文 العربية русский 🎉',
                 'blocks' => [
-                    ['kind' => 'markdown', 'source' => '# 标题\n\n内容 with émojis 🎊']
-                ]
-            ]
+                    ['kind' => 'markdown', 'source' => '# 标题\n\n内容 with émojis 🎊'],
+                ],
+            ],
         ];
 
         foreach ($testCases as $index => $testData) {
             $validationResult = $this->validationService->validateContentCreation($testData);
             $this->assertTrue($validationResult->isValid(), "Test case {$index} should be valid");
-            
+
             $sanitizedData = $validationResult->getData();
             $this->assertIsArray($sanitizedData);
+            $this->assertIsArray($sanitizedData['blocks']);
+            $this->assertIsString($sanitizedData['type']);
 
             $blocks = [];
             foreach ($sanitizedData['blocks'] as $blockData) {
+                $this->assertIsArray($blockData);
+                $this->assertIsString($blockData['source']);
                 $blocks[] = MarkdownBlock::create($blockData['source']);
             }
 
+            $title = isset($sanitizedData['title']) && is_string($sanitizedData['title']) ? $sanitizedData['title'] : null;
+            $summary = isset($sanitizedData['summary']) && is_string($sanitizedData['summary']) ? $sanitizedData['summary'] : null;
+
             $content = ContentItem::create(
                 $sanitizedData['type'],
-                $sanitizedData['title'] ?? null,
-                $sanitizedData['summary'] ?? null,
+                $title,
+                $summary,
                 $blocks
             );
 
             $this->repository->save($content);
             $retrieved = $this->repository->findById($content->id);
-            
+
             $this->assertNotNull($retrieved, "Test case {$index} should persist correctly");
             $this->assertEquals($content->type, $retrieved->type);
             $this->assertCount(count($blocks), $retrieved->blocks);
