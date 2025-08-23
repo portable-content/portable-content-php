@@ -37,10 +37,14 @@ public function __construct(
 
 ## System Architecture
 
+**Current Implementation Status:** Phase 1A Complete ✅
+**Next Phase:** Phase 1B - GraphQL API Layer
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Presentation Layer                       │
-│                   (API, CLI, Web UI)                       │
+│              (GraphQL API*, CLI Tools*, Web UI*)           │
+│                   *Future Features                         │
 └─────────────────────┬───────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────┐
@@ -68,6 +72,24 @@ public function __construct(
 │  └─────────────────┘    └─────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+## Implementation Status
+
+### ✅ Currently Implemented (Phase 1A)
+- **Domain Layer**: ContentItem, MarkdownBlock, immutable design
+- **Application Layer**: Complete validation and sanitization pipeline
+- **Infrastructure Layer**: SQLite repository with transaction safety
+- **Testing**: 315+ tests with comprehensive coverage
+- **CLI Tools**: Database migration tool (`bin/migrate.php`)
+- **Quality Tools**: PHPStan Level 9, CS-Fixer, comprehensive CI/CD
+
+### 🚧 Future Features (Phase 1B+)
+- **Presentation Layer**: GraphQL API, additional CLI tools, Web UI
+- **Block System**: HTML, Code, Image, Embed blocks
+- **Repository Layer**: PostgreSQL, MongoDB, Redis implementations
+- **Advanced Features**: Caching, authentication, webhooks, analytics
+
+See [Future Features](future-features.md) for detailed roadmap.
 
 ## Core Components
 

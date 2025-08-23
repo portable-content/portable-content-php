@@ -162,6 +162,7 @@ For complete documentation, see the [docs/](docs/) directory:
 - **[Repository Pattern](docs/repository.md)** - Data persistence and retrieval
 - **[Architecture Overview](docs/architecture.md)** - System design and components
 - **[Examples](docs/examples.md)** - Common usage patterns and recipes
+- **[Future Features](docs/future-features.md)** - Planned features and roadmap
 
 ### For AI/LLM Developers
 

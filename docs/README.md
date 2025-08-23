@@ -45,6 +45,14 @@ Welcome to the comprehensive documentation for the Portable Content PHP library.
   - Error handling strategies
   - Testing approaches
 
+### 🚀 Future Development
+- **[Future Features](future-features.md)** - Planned features and roadmap
+  - Phase 1B: GraphQL API
+  - CLI tools and utilities
+  - Additional block types
+  - Repository implementations
+  - Performance and security enhancements
+
 ## Quick Reference
 
 ### Core Classes
