@@ -92,6 +92,19 @@ class ContentItem
         );
     }
 
+    public function withSummary(?string $summary): self
+    {
+        return new self(
+            id: $this->id,
+            type: $this->type,
+            title: $this->title,
+            summary: $summary,
+            blocks: $this->blocks,
+            createdAt: $this->createdAt,
+            updatedAt: new \DateTimeImmutable()
+        );
+    }
+
     public function addBlock(BlockInterface $block): self
     {
         $blocks = $this->blocks;
