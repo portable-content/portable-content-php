@@ -10,7 +10,6 @@ use PortableContent\Tests\TestCase;
 /**
  * @internal
  *
- * @coversNothing
  */
 final class MarkdownBlockSanitizerTest extends TestCase
 {

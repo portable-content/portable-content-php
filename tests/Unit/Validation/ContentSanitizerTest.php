@@ -12,7 +12,6 @@ use PortableContent\Validation\ContentSanitizer;
 /**
  * @internal
  *
- * @coversNothing
  */
 final class ContentSanitizerTest extends TestCase
 {

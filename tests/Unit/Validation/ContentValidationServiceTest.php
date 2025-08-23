@@ -13,7 +13,6 @@ use PortableContent\Validation\ValueObjects\ValidationResult;
 /**
  * @internal
  *
- * @coversNothing
  */
 final class ContentValidationServiceTest extends TestCase
 {

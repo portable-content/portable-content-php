@@ -12,7 +12,6 @@ use PortableContent\Exception\InvalidContentException;
 /**
  * @internal
  *
- * @coversNothing
  */
 final class MarkdownBlockTest extends TestCase
 {

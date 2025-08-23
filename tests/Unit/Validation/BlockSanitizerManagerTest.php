@@ -11,7 +11,6 @@ use PortableContent\Validation\BlockSanitizerManager;
 /**
  * @internal
  *
- * @coversNothing
  */
 final class BlockSanitizerManagerTest extends TestCase
 {

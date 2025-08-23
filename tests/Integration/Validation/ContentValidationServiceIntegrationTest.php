@@ -22,7 +22,6 @@ use Symfony\Component\Validator\Validation;
  *
  * @internal
  *
- * @coversNothing
  */
 final class ContentValidationServiceIntegrationTest extends TestCase
 {

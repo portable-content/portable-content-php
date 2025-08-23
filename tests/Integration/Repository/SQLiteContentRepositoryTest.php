@@ -13,7 +13,6 @@ use PortableContent\Tests\Support\Repository\RepositoryFactory;
 /**
  * @internal
  *
- * @coversNothing
  */
 final class SQLiteContentRepositoryTest extends IntegrationTestCase
 {
