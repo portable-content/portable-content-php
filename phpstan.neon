@@ -3,3 +3,6 @@ parameters:
     paths:
         - src
         - tests
+    ignoreErrors:
+        # Ignore mock-related issues in unit tests - PHPUnit mocks add expects() method at runtime
+        - '#Call to an undefined method PortableContent\\Contracts\\.*Interface::expects\(\)#'

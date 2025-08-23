@@ -84,8 +84,12 @@ final class ContentValidationServiceIntegrationTest extends TestCase
         $this->assertEquals("Test summary\nwith\n\nmultiple lines", $sanitizedData['summary']);
 
         // Verify block-level sanitization
+        $this->assertArrayHasKey('blocks', $sanitizedData);
         $this->assertIsArray($sanitizedData['blocks']);
         $this->assertCount(1, $sanitizedData['blocks']);
+        $this->assertIsArray($sanitizedData['blocks'][0]);
+        $this->assertArrayHasKey('kind', $sanitizedData['blocks'][0]);
+        $this->assertArrayHasKey('source', $sanitizedData['blocks'][0]);
         $this->assertEquals('markdown', $sanitizedData['blocks'][0]['kind']);
         // The markdown sanitizer preserves the structure but trims outer whitespace
         $this->assertEquals("# Hello World\n\n  This is a test.", $sanitizedData['blocks'][0]['source']);
@@ -200,7 +204,14 @@ final class ContentValidationServiceIntegrationTest extends TestCase
         $this->assertTrue($result->isValid());
 
         $sanitizedData = $result->getData();
+        $this->assertIsArray($sanitizedData);
+        $this->assertArrayHasKey('blocks', $sanitizedData);
+        $this->assertIsArray($sanitizedData['blocks']);
         $this->assertCount(2, $sanitizedData['blocks']);
+        $this->assertIsArray($sanitizedData['blocks'][0]);
+        $this->assertIsArray($sanitizedData['blocks'][1]);
+        $this->assertArrayHasKey('kind', $sanitizedData['blocks'][0]);
+        $this->assertArrayHasKey('kind', $sanitizedData['blocks'][1]);
         $this->assertEquals('markdown', $sanitizedData['blocks'][0]['kind']);
         $this->assertEquals('markdown', $sanitizedData['blocks'][1]['kind']);
     }
@@ -224,6 +235,9 @@ final class ContentValidationServiceIntegrationTest extends TestCase
         $this->assertTrue($result->isValid());
 
         $sanitizedData = $result->getData();
+        $this->assertIsArray($sanitizedData);
+        $this->assertArrayHasKey('title', $sanitizedData);
+        $this->assertArrayHasKey('summary', $sanitizedData);
         $this->assertEquals('Updated Note', $sanitizedData['title']);
         $this->assertEquals('Updated summary', $sanitizedData['summary']);
     }
@@ -244,6 +258,11 @@ final class ContentValidationServiceIntegrationTest extends TestCase
         $result = $this->service->sanitizeContent($inputData);
 
         $this->assertEquals('note', $result['type']);
+        $this->assertArrayHasKey('title', $result);
+        $this->assertArrayHasKey('blocks', $result);
+        $this->assertIsArray($result['blocks']);
+        $this->assertIsArray($result['blocks'][0]);
+        $this->assertArrayHasKey('source', $result['blocks'][0]);
         $this->assertEquals('Test', $result['title']);
         $this->assertEquals('# Hello', $result['blocks'][0]['source']);
     }
@@ -293,20 +312,34 @@ final class ContentValidationServiceIntegrationTest extends TestCase
         $sanitizedData = $result->getData();
 
         // Verify content sanitization
+        $this->assertIsArray($sanitizedData);
+        $this->assertArrayHasKey('type', $sanitizedData);
+        $this->assertArrayHasKey('title', $sanitizedData);
+        $this->assertArrayHasKey('summary', $sanitizedData);
+        $this->assertArrayHasKey('blocks', $sanitizedData);
         $this->assertEquals('article', $sanitizedData['type']);
         $this->assertEquals('How to Use Portable Content', $sanitizedData['title']);
         $this->assertEquals("A comprehensive guide\nto using the\n\nportable content system.", $sanitizedData['summary']);
 
         // Verify block sanitization
+        $this->assertIsArray($sanitizedData['blocks']);
         $this->assertCount(2, $sanitizedData['blocks']);
 
         // First block
+        $this->assertIsArray($sanitizedData['blocks'][0]);
+        $this->assertArrayHasKey('kind', $sanitizedData['blocks'][0]);
+        $this->assertArrayHasKey('source', $sanitizedData['blocks'][0]);
         $this->assertEquals('markdown', $sanitizedData['blocks'][0]['kind']);
+        $this->assertIsString($sanitizedData['blocks'][0]['source']);
         $this->assertStringContainsString('# Introduction', $sanitizedData['blocks'][0]['source']);
         $this->assertStringContainsString('## Getting Started', $sanitizedData['blocks'][0]['source']);
 
         // Second block
+        $this->assertIsArray($sanitizedData['blocks'][1]);
+        $this->assertArrayHasKey('kind', $sanitizedData['blocks'][1]);
+        $this->assertArrayHasKey('source', $sanitizedData['blocks'][1]);
         $this->assertEquals('markdown', $sanitizedData['blocks'][1]['kind']);
+        $this->assertIsString($sanitizedData['blocks'][1]['source']);
         $this->assertStringContainsString('## Advanced Usage', $sanitizedData['blocks'][1]['source']);
     }
 }
