@@ -11,7 +11,6 @@ use PortableContent\Validation\ValueObjects\ValidationResult;
 
 /**
  * @internal
- *
  */
 final class BlockValidatorManagerTest extends TestCase
 {

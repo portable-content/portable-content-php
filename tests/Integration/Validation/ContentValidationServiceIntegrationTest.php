@@ -21,7 +21,6 @@ use Symfony\Component\Validator\Validation;
  * using real implementations rather than mocks.
  *
  * @internal
- *
  */
 final class ContentValidationServiceIntegrationTest extends TestCase
 {

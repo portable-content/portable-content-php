@@ -9,7 +9,6 @@ use PortableContent\Exception\InvalidContentException;
 
 /**
  * @internal
- *
  */
 final class InvalidContentExceptionTest extends TestCase
 {

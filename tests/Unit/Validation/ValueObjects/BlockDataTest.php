@@ -9,7 +9,6 @@ use PortableContent\Validation\ValueObjects\BlockData;
 
 /**
  * @internal
- *
  */
 final class BlockDataTest extends TestCase
 {

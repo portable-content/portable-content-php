@@ -12,7 +12,6 @@ use Symfony\Component\Validator\Validation;
 
 /**
  * @internal
- *
  */
 final class SymfonyValidatorAdapterTest extends TestCase
 {

@@ -15,7 +15,6 @@ use PortableContent\Tests\Support\Repository\SQLiteContentRepository;
 
 /**
  * @internal
- *
  */
 final class RepositoryErrorHandlingTest extends IntegrationTestCase
 {

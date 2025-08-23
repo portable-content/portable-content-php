@@ -10,7 +10,6 @@ use PortableContent\Validation\ValueObjects\ContentCreationRequest;
 
 /**
  * @internal
- *
  */
 final class ContentCreationRequestTest extends TestCase
 {

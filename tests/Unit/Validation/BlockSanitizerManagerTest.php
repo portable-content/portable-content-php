@@ -10,7 +10,6 @@ use PortableContent\Validation\BlockSanitizerManager;
 
 /**
  * @internal
- *
  */
 final class BlockSanitizerManagerTest extends TestCase
 {

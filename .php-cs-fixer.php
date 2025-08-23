@@ -31,6 +31,7 @@ return (new PhpCsFixer\Config())
             'on_multiline' => 'ensure_fully_multiline',
             'keep_multiple_spaces_after_comma' => true,
         ],
+        'php_unit_test_class_requires_covers' => false,
     ])
     ->setFinder($finder)
     ->setRiskyAllowed(true)

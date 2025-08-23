@@ -9,7 +9,6 @@ use PortableContent\Validation\ValueObjects\ValidationResult;
 
 /**
  * @internal
- *
  */
 final class ValidationResultTest extends TestCase
 {

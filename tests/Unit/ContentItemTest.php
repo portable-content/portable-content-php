@@ -11,7 +11,6 @@ use PortableContent\Exception\InvalidContentException;
 
 /**
  * @internal
- *
  */
 final class ContentItemTest extends TestCase
 {

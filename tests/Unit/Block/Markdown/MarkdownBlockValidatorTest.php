@@ -9,7 +9,6 @@ use PortableContent\Tests\TestCase;
 
 /**
  * @internal
- *
  */
 final class MarkdownBlockValidatorTest extends TestCase
 {

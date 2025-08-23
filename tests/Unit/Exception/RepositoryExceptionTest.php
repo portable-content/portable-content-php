@@ -9,7 +9,6 @@ use PortableContent\Exception\RepositoryException;
 
 /**
  * @internal
- *
  */
 final class RepositoryExceptionTest extends TestCase
 {

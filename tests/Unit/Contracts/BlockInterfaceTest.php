@@ -10,7 +10,6 @@ use PortableContent\Contracts\Block\BlockInterface;
 
 /**
  * @internal
- *
  */
 final class BlockInterfaceTest extends TestCase
 {

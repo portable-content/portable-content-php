@@ -12,7 +12,6 @@ use PortableContent\Tests\Support\Repository\RepositoryFactory;
 
 /**
  * @internal
- *
  */
 final class SQLiteContentRepositoryTest extends IntegrationTestCase
 {
