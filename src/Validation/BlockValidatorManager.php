@@ -108,7 +108,7 @@ final class BlockValidatorManager
     {
         $blockType = $blockData['kind'] ?? '';
 
-        if (!is_string($blockType)) {
+        if (!is_string($blockType) || trim($blockType) === '') {
             throw new \InvalidArgumentException('Block data must contain a valid "kind" field');
         }
 
