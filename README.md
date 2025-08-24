@@ -1,6 +1,6 @@
 # Portable Content PHP
 
-[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/portable-content/portable-content-php/releases/tag/v0.3.0)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/portable-content/portable-content-php/releases/tag/v0.4.0)
 [![codecov](https://codecov.io/gh/portable-content/portable-content-php/graph/badge.svg?token=V5i88ShX88)](https://codecov.io/gh/portable-content/portable-content-php)
 ![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-blue)
 ![PHPStan Level](https://img.shields.io/badge/PHPStan-Level%209-brightgreen)
@@ -9,28 +9,16 @@
 
 A robust PHP library for managing portable content with comprehensive validation, sanitization, and flexible storage backends.
 
-## 🎉 v0.2.0 Released - Refined Architecture!
+## ✨ Key Features
 
-This release represents a **strategic refinement** of the repository architecture, focusing on a robust SQLite foundation while removing speculative implementations. The result is a cleaner, more maintainable codebase ready for production use.
-
-### ✨ Key Features
-
-- **🏗️ Immutable Domain Objects** - Thread-safe ContentItem and MarkdownBlock entities
+- **🏗️ Mutable Domain Objects** - Flexible ContentItem and MarkdownBlock entities with proper encapsulation
+- **🧱 AbstractBlock Architecture** - Extensible base class for all block types
 - **🔒 Type-Safe Validation** - Comprehensive input validation and sanitization
 - **💾 Repository Pattern** - Clean abstraction with capability discovery system
-- **🧪 Comprehensive Testing** - 315 tests with 1,674 assertions
+- **🧪 Comprehensive Testing** - 315 tests with 1,669 assertions
 - **📚 Complete Documentation** - 7 detailed guides covering all aspects
 - **⚡ Production Ready** - PHPStan Level 9, zero static analysis errors
-- **🧹 Clean Architecture** - Focused, maintainable codebase without over-engineering
-
-### 🎯 v0.2.0 Improvements ✅
-
-- ✅ **Repository Capabilities** - Added feature discovery with `getCapabilities()` and `supports()`
-- ✅ **Simplified Architecture** - Removed speculative vector database implementations
-- ✅ **Enhanced SQLite Repository** - Production-ready with comprehensive error handling
-- ✅ **Library Best Practices** - Proper dependency management and distribution
-- ✅ **Cleaner Codebase** - Focused implementation without over-engineering
-- ✅ **Maintained Quality** - All 315 tests passing, PHPStan Level 9 compliance
+- **🧹 Clean Architecture** - Focused, maintainable codebase with extensible design
 
 ## Requirements
 
@@ -264,18 +252,7 @@ cd portable-content-php
 composer install
 ```
 
-## 🚀 Release Information
 
-### v0.3.0 - Entity Architecture
-- **Release Date**: January 24, 2025
-- **Status**: Production Ready
-- **PHP Compatibility**: 8.3+
-- **Quality**: PHPStan Level 9, Zero Static Analysis Errors
-- **Testing**: 315 Tests, 1,673 Assertions
-- **Documentation**: Complete (7 Guides)
-- **Breaking Change**: ContentItem converted from value object to entity
-
-See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
 
 ## Contributing
 
@@ -285,7 +262,7 @@ This library follows strict quality standards:
 - **PHPStan Level 9** static analysis
 - **PHP-CS-Fixer** code style compliance
 - **Comprehensive testing** with unit and integration tests
-- **Immutable design** patterns throughout
+- **Mutable entity** design with proper encapsulation
 - **Clean architecture** with clear separation of concerns
 
 ## License

@@ -5,6 +5,93 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-01-24
+
+### 🔄 BREAKING CHANGE: Mutable MarkdownBlock with AbstractBlock Architecture
+
+This release introduces a major architectural improvement by converting MarkdownBlock from immutable to mutable design and adding an AbstractBlock base class for extensibility.
+
+### ✨ Added
+- **AbstractBlock Base Class** - New extensible base class for all block types with common functionality
+- **Mutable MarkdownBlock** - Added `setSource()`, `setId()`, `setCreatedAt()` methods for direct modification
+- **Enhanced Encapsulation** - All block properties now private with proper getter/setter methods
+- **Extensible Architecture** - Foundation for future block types (CodeBlock, HtmlBlock, etc.)
+- **Helper Methods** - `generateId()` and `generateCreatedAt()` in AbstractBlock for consistent object creation
+
+### 🔄 Changed
+- **MarkdownBlock Architecture** - Converted from immutable to mutable entity extending AbstractBlock
+- **Property Access** - All properties now private, accessible only through getter methods
+- **Block Creation** - MarkdownBlock now extends AbstractBlock instead of directly implementing BlockInterface
+- **Repository Layer** - Updated to use getter methods instead of direct property access
+- **Test Suite** - All 315 tests updated to use new mutable API patterns
+
+### 🗑️ Removed
+- **Immutable Methods** - Removed `withSource()` method (replaced with `setSource()`)
+- **Public Properties** - All MarkdownBlock properties now private (breaking change)
+- **Direct Property Access** - No longer possible to access `$block->source`, `$block->id`, etc.
+
+### 🔧 Technical Improvements
+- **Better Inheritance** - Clean inheritance hierarchy with AbstractBlock providing common functionality
+- **Improved Extensibility** - Easy to add new block types following the same pattern
+- **Maintained Type Safety** - Full type hints and static analysis compliance preserved
+- **Enhanced Testing** - All tests pass with improved encapsulation validation
+
+### 📊 Impact
+- **Breaking Change** - Requires code updates for all block property access and modification
+- **Improved Architecture** - Cleaner inheritance hierarchy and better code organization
+- **Enhanced Extensibility** - Much easier to add new block types in the future
+- **Better Encapsulation** - Proper object-oriented design with private properties
+
+### 🔄 Migration Guide
+
+**Before (v0.3.0 - Immutable MarkdownBlock):**
+```php
+// Property access
+$source = $block->source;
+$id = $block->id;
+
+// Updates (created new instances)
+$updated = $block->withSource('New content');
+```
+
+**After (v0.4.0 - Mutable MarkdownBlock with AbstractBlock):**
+```php
+// Property access (use getters)
+$source = $block->getSource();
+$id = $block->getId();
+
+// Updates (modify same object)
+$block->setSource('New content');
+```
+
+### 📝 Migration Steps
+1. **Update Property Access** - Replace direct property access with getter methods
+2. **Update Modifications** - Replace `withSource()` with `setSource()`
+3. **Update Repository Code** - Use getters in any custom repository implementations
+4. **Update Tests** - Modify test assertions to use new getter/setter methods
+
+### 🏗️ Future Block Types
+The new AbstractBlock makes it easy to add new block types:
+```php
+class CodeBlock extends AbstractBlock
+{
+    private string $language;
+    private string $code;
+
+    // Inherits common functionality from AbstractBlock
+    // Easy to implement required abstract methods
+}
+```
+
+### ✅ Compatibility
+- **PHP Version** - Still requires PHP 8.3+
+- **Dependencies** - No changes to external dependencies
+- **Database Schema** - No database changes required
+- **Validation Rules** - All validation logic unchanged
+- **Test Coverage** - All 315 tests passing with 1,669 assertions
+
+---
+
 ## [0.3.0] - 2025-01-24
 
 ### 🔄 BREAKING CHANGE: ContentItem Entity Conversion
@@ -265,4 +352,4 @@ The library is ready for production use in content management applications requi
 
 ---
 
-**Full Changelog**: https://github.com/portable-content/portable-content-php/compare/v0.2.0...v0.3.0
+**Full Changelog**: https://github.com/portable-content/portable-content-php/compare/v0.3.0...v0.4.0
