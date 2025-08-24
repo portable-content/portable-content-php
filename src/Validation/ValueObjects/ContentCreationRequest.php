@@ -47,7 +47,7 @@ final class ContentCreationRequest
             'type' => $this->type,
             'title' => $this->title,
             'summary' => $this->summary,
-            'blocks' => array_map(fn (BlockData $block) => $block->toArray(), $this->blocks),
+            'blocks' => array_map(fn(BlockData $block) => $block->toArray(), $this->blocks),
         ];
     }
 
@@ -82,7 +82,7 @@ final class ContentCreationRequest
      */
     public function getBlocksByKind(string $kind): array
     {
-        return array_filter($this->blocks, fn (BlockData $block) => $block->kind === $kind);
+        return array_filter($this->blocks, fn(BlockData $block) => $block->kind === $kind);
     }
 
     /**
@@ -98,7 +98,7 @@ final class ContentCreationRequest
      */
     public function getTotalContentLength(): int
     {
-        return array_sum(array_map(fn (BlockData $block) => strlen($block->source), $this->blocks));
+        return array_sum(array_map(fn(BlockData $block) => strlen($block->source), $this->blocks));
     }
 
     /**

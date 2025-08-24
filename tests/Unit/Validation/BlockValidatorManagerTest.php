@@ -265,7 +265,7 @@ final class BlockValidatorManagerTest extends TestCase
 
     private function createMockValidator(string $blockType): BlockValidatorInterface
     {
-        return new class($blockType) implements BlockValidatorInterface {
+        return new class ($blockType) implements BlockValidatorInterface {
             public function __construct(private string $blockType) {}
 
             public function validate(array $blockData): ValidationResult

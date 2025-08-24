@@ -4,18 +4,18 @@ codecov:
 coverage:
   precision: 2
   round: down
-  range: "70...100"
+  range: "90...100"
 
   status:
     project:
       default:
-        target: auto
+        target: 90%
         threshold: 1%
         base: auto
     patch:
       default:
-        target: 80%
-        threshold: 5%
+        target: 90%
+        threshold: 2%
 
 comment:
   layout: "reach,diff,flags,tree"

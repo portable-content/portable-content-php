@@ -68,7 +68,7 @@ final class ContentValidationServiceIntegrationTest extends TestCase
         $result = $this->service->validateContentCreation($inputData);
 
         if (!$result->isValid()) {
-            $this->fail('Validation failed with errors: '.json_encode($result->getErrors()));
+            $this->fail('Validation failed with errors: ' . json_encode($result->getErrors()));
         }
 
         $this->assertTrue($result->isValid(), 'Validation should pass for valid content');

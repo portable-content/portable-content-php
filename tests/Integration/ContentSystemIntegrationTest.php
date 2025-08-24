@@ -116,7 +116,7 @@ final class ContentSystemIntegrationTest extends IntegrationTestCase
 
         // Simulate content statistics gathering
         $totalContentItems = count($contentItems);
-        $totalBlocks = array_sum(array_map(fn ($content) => count($content->blocks), $contentItems));
+        $totalBlocks = array_sum(array_map(fn($content) => count($content->blocks), $contentItems));
 
         $this->assertEquals(3, $totalContentItems);
         $this->assertEquals(5, $totalBlocks); // 1 + 2 + 2 blocks

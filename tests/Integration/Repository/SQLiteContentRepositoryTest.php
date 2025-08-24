@@ -161,9 +161,9 @@ final class SQLiteContentRepositoryTest extends IntegrationTestCase
 
         // Verify no overlap
         $allIds = array_merge(
-            array_map(fn ($c) => $c->id, $page1),
-            array_map(fn ($c) => $c->id, $page2),
-            array_map(fn ($c) => $c->id, $page3)
+            array_map(fn($c) => $c->id, $page1),
+            array_map(fn($c) => $c->id, $page2),
+            array_map(fn($c) => $c->id, $page3)
         );
         $this->assertCount(5, array_unique($allIds));
     }

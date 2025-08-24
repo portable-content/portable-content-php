@@ -223,7 +223,7 @@ final class BlockSanitizerManagerTest extends TestCase
 
     private function createMockSanitizer(string $blockType): BlockSanitizerInterface
     {
-        return new class($blockType) implements BlockSanitizerInterface {
+        return new class ($blockType) implements BlockSanitizerInterface {
             public function __construct(private string $blockType) {}
 
             public function sanitize(array $blockData): array

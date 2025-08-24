@@ -216,7 +216,7 @@ final class SymfonyValidatorAdapterTest extends TestCase
                 break;
             }
         }
-        $this->assertTrue($found, 'Expected error message not found. Actual errors: '.implode(', ', $blockErrors));
+        $this->assertTrue($found, 'Expected error message not found. Actual errors: ' . implode(', ', $blockErrors));
     }
 
     public function testValidateContentCreationWithEmptyBlockSource(): void
@@ -245,7 +245,7 @@ final class SymfonyValidatorAdapterTest extends TestCase
                 break;
             }
         }
-        $this->assertTrue($found, 'Expected error message not found. Actual errors: '.implode(', ', $blockErrors));
+        $this->assertTrue($found, 'Expected error message not found. Actual errors: ' . implode(', ', $blockErrors));
     }
 
     public function testValidateContentCreationWithScriptTag(): void
@@ -274,7 +274,7 @@ final class SymfonyValidatorAdapterTest extends TestCase
                 break;
             }
         }
-        $this->assertTrue($found, 'Expected error message not found. Actual errors: '.implode(', ', $blockErrors));
+        $this->assertTrue($found, 'Expected error message not found. Actual errors: ' . implode(', ', $blockErrors));
     }
 
     public function testValidateContentCreationWithInvalidUtf8(): void
@@ -303,7 +303,7 @@ final class SymfonyValidatorAdapterTest extends TestCase
                 break;
             }
         }
-        $this->assertTrue($found, 'Expected error message not found. Actual errors: '.implode(', ', $blockErrors));
+        $this->assertTrue($found, 'Expected error message not found. Actual errors: ' . implode(', ', $blockErrors));
     }
 
     public function testValidateContentUpdateAllowsPartialData(): void

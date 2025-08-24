@@ -139,6 +139,6 @@ final class BlockData
             return $this->source;
         }
 
-        return substr($this->source, 0, $length).'...';
+        return substr($this->source, 0, $length) . '...';
     }
 }

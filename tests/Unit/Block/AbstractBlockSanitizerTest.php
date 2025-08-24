@@ -31,7 +31,7 @@ final class AbstractBlockSanitizerTest extends TestCase
 
         foreach ($testCases as $case) {
             $result = $this->sanitizer->testApplyBasicSanitization($case['input']);
-            $this->assertEquals($case['expected'], $result, 'Failed for input: '.json_encode($case['input']));
+            $this->assertEquals($case['expected'], $result, 'Failed for input: ' . json_encode($case['input']));
         }
     }
 
@@ -48,7 +48,7 @@ final class AbstractBlockSanitizerTest extends TestCase
 
         foreach ($testCases as $case) {
             $result = $this->sanitizer->testApplyBasicKindSanitization($case['input']);
-            $this->assertEquals($case['expected'], $result, 'Failed for input: '.json_encode($case['input']));
+            $this->assertEquals($case['expected'], $result, 'Failed for input: ' . json_encode($case['input']));
         }
     }
 

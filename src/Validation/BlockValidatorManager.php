@@ -83,7 +83,7 @@ final class BlockValidatorManager
         foreach ($blocks as $index => $blockData) {
             if (!is_array($blockData)) {
                 throw new \InvalidArgumentException(
-                    "Invalid block data at index {$index}: expected array, got ".gettype($blockData)
+                    "Invalid block data at index {$index}: expected array, got " . gettype($blockData)
                 );
             }
 

@@ -52,7 +52,7 @@ final class PerformanceAndEdgeCaseTest extends TestCase
     {
         // Test with large content that's still within reasonable limits
         $largeMarkdownContent = str_repeat("# Section\n\nThis is a large section with lots of content. ", 100);
-        $largeMarkdownContent .= "\n\n".str_repeat("- List item with substantial content\n", 50);
+        $largeMarkdownContent .= "\n\n" . str_repeat("- List item with substantial content\n", 50);
 
         $inputData = [
             'type' => 'article',
@@ -162,7 +162,7 @@ final class PerformanceAndEdgeCaseTest extends TestCase
 
         // Retrieve all content (with higher limit than default 20)
         $allContent = $this->repository->findAll(100);
-        $this->assertCount(50, $allContent, 'Expected 50 content items, got '.count($allContent));
+        $this->assertCount(50, $allContent, 'Expected 50 content items, got ' . count($allContent));
 
         // Retrieve individual items
         foreach ($contentIds as $id) {

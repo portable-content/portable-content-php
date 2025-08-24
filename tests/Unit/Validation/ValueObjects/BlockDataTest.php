@@ -261,7 +261,7 @@ final class BlockDataTest extends TestCase
 
         $preview = $block->getPreview(50);
 
-        $this->assertEquals(str_repeat('a', 50).'...', $preview);
+        $this->assertEquals(str_repeat('a', 50) . '...', $preview);
         $this->assertEquals(53, strlen($preview)); // 50 + 3 for '...'
     }
 

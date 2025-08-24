@@ -80,10 +80,10 @@ final class ContentSanitizerTest extends TestCase
             $result = $this->sanitizer->sanitize($data);
             if (null === $case['input']) {
                 // Null values are not included in the result
-                $this->assertArrayNotHasKey('type', $result, 'Failed for input: '.json_encode($case['input']));
+                $this->assertArrayNotHasKey('type', $result, 'Failed for input: ' . json_encode($case['input']));
             } else {
-                $this->assertArrayHasKey('type', $result, 'Failed for input: '.json_encode($case['input']));
-                $this->assertEquals($case['expected'], $result['type'], 'Failed for input: '.json_encode($case['input']));
+                $this->assertArrayHasKey('type', $result, 'Failed for input: ' . json_encode($case['input']));
+                $this->assertEquals($case['expected'], $result['type'], 'Failed for input: ' . json_encode($case['input']));
             }
         }
     }
@@ -110,7 +110,7 @@ final class ContentSanitizerTest extends TestCase
                 $this->assertArrayNotHasKey('title', $result);
             } else {
                 $this->assertArrayHasKey('title', $result);
-                $this->assertEquals($case['expected'], $result['title'], 'Failed for input: '.json_encode($case['input']));
+                $this->assertEquals($case['expected'], $result['title'], 'Failed for input: ' . json_encode($case['input']));
             }
         }
     }
@@ -135,7 +135,7 @@ final class ContentSanitizerTest extends TestCase
                 $this->assertArrayNotHasKey('summary', $result);
             } else {
                 $this->assertArrayHasKey('summary', $result);
-                $this->assertEquals($case['expected'], $result['summary'], 'Failed for input: '.json_encode($case['input']));
+                $this->assertEquals($case['expected'], $result['summary'], 'Failed for input: ' . json_encode($case['input']));
             }
         }
     }
@@ -220,11 +220,11 @@ final class ContentSanitizerTest extends TestCase
         foreach ($testCases as $case) {
             $data = ['blocks' => [['kind' => 'markdown', 'source' => $case['input']]]];
             $result = $this->sanitizer->sanitize($data);
-            $this->assertNotEmpty($result['blocks'], 'Failed for input: '.json_encode($case['input']));
+            $this->assertNotEmpty($result['blocks'], 'Failed for input: ' . json_encode($case['input']));
             $this->assertIsArray($result['blocks']);
-            $this->assertIsArray($result['blocks'][0], 'Failed for input: '.json_encode($case['input']));
-            $this->assertArrayHasKey('source', $result['blocks'][0], 'Failed for input: '.json_encode($case['input']));
-            $this->assertEquals($case['expected'], $result['blocks'][0]['source'], 'Failed for input: '.json_encode($case['input']));
+            $this->assertIsArray($result['blocks'][0], 'Failed for input: ' . json_encode($case['input']));
+            $this->assertArrayHasKey('source', $result['blocks'][0], 'Failed for input: ' . json_encode($case['input']));
+            $this->assertEquals($case['expected'], $result['blocks'][0]['source'], 'Failed for input: ' . json_encode($case['input']));
         }
     }
 

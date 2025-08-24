@@ -48,7 +48,7 @@ final class ContentSanitizer implements SanitizerInterface
         if (isset($data['blocks']) && null !== $data['blocks']) {
             if (!is_array($data['blocks'])) {
                 throw new \InvalidArgumentException(
-                    'Invalid blocks data: expected array, got '.gettype($data['blocks'])
+                    'Invalid blocks data: expected array, got ' . gettype($data['blocks'])
                 );
             }
             $sanitized['blocks'] = $this->blockSanitizerManager->sanitizeBlocks($data['blocks']);

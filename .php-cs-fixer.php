@@ -11,7 +11,7 @@ $finder = PhpCsFixer\Finder::create()
 
 return (new PhpCsFixer\Config())
     ->setRules([
-        '@PhpCsFixer' => true,
+        '@PER-CS3.0' => true,
         '@PHP83Migration' => true,
         'declare_strict_types' => true,
         'array_syntax' => ['syntax' => 'short'],

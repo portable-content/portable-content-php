@@ -235,7 +235,7 @@ final class SymfonyValidatorAdapter implements ContentValidatorInterface
                     // If block validation fails, add a generic error
                     $errorResult = ValidationResult::singleError(
                         'blocks',
-                        "Block {$index} validation failed: ".$e->getMessage()
+                        "Block {$index} validation failed: " . $e->getMessage()
                     );
                     $currentResult = $currentResult->merge($errorResult);
                 }

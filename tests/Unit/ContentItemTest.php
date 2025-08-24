@@ -234,7 +234,7 @@ final class ContentItemTest extends TestCase
         // Test that we can work with blocks through the interface
         $totalWords = array_reduce(
             $content->blocks,
-            fn (int $total, $block) => $total + $block->getWordCount(),
+            fn(int $total, $block) => $total + $block->getWordCount(),
             0
         );
 

@@ -53,13 +53,13 @@ final class Database
 
     public static function runMigrations(\PDO $pdo, bool $verbose = true): void
     {
-        $migrationsPath = __DIR__.'/../migrations';
+        $migrationsPath = __DIR__ . '/../migrations';
 
         if (!is_dir($migrationsPath)) {
             throw new \RuntimeException("Migrations directory not found: {$migrationsPath}");
         }
 
-        $migrationFiles = glob($migrationsPath.'/*.sql');
+        $migrationFiles = glob($migrationsPath . '/*.sql');
         if (false === $migrationFiles) {
             throw new \RuntimeException("Failed to read migrations directory: {$migrationsPath}");
         }
@@ -75,11 +75,11 @@ final class Database
             try {
                 $pdo->exec($sql);
                 if ($verbose) {
-                    echo 'Applied migration: '.basename($migrationFile)."\n";
+                    echo 'Applied migration: ' . basename($migrationFile) . "\n";
                 }
             } catch (\PDOException $e) {
                 throw new \RuntimeException(
-                    'Failed to apply migration '.basename($migrationFile).": {$e->getMessage()}",
+                    'Failed to apply migration ' . basename($migrationFile) . ": {$e->getMessage()}",
                     0,
                     $e
                 );
