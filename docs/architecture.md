@@ -4,13 +4,14 @@ This document describes the architecture and design principles of the Portable C
 
 ## Design Principles
 
-### 1. Immutability
-All domain objects are immutable, providing thread safety and preventing accidental mutations.
+### 1. Entity Design
+Domain objects follow proper entity patterns with encapsulation and controlled mutability.
 
 ```php
-// Content objects are immutable
+// Content objects are mutable entities with proper encapsulation
 $content = ContentItem::create('note', 'Original Title');
-$updated = $content->withTitle('New Title'); // Creates new instance
+$content->setTitle('New Title'); // Modifies the same instance
+$title = $content->getTitle(); // Access via getter methods
 ```
 
 ### 2. Type Safety
@@ -76,7 +77,7 @@ public function __construct(
 ## Implementation Status
 
 ### ✅ Currently Implemented (Phase 1A)
-- **Domain Layer**: ContentItem, MarkdownBlock, immutable design
+- **Domain Layer**: ContentItem, MarkdownBlock, entity design
 - **Application Layer**: Complete validation and sanitization pipeline
 - **Infrastructure Layer**: SQLite repository with transaction safety
 - **Testing**: 315+ tests with comprehensive coverage
@@ -98,8 +99,8 @@ See [Future Features](future-features.md) for detailed roadmap.
 #### ContentItem (Aggregate Root)
 - Central domain entity representing a piece of content
 - Contains metadata (type, title, summary) and blocks
-- Immutable with factory methods for creation and updates
-- Enforces business rules and invariants
+- Mutable entity with proper encapsulation via getters/setters
+- Enforces business rules and invariants through validation in setters
 
 #### Block System
 - **BlockInterface**: Contract for all block types
@@ -310,7 +311,7 @@ try {
 - Prepared statements for SQL injection prevention
 
 ### 2. Memory Management
-- Immutable objects prevent memory leaks from shared references
+- Proper encapsulation prevents uncontrolled mutations and data corruption
 - Lazy loading could be implemented for large content sets
 
 ### 3. Validation Efficiency

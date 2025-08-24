@@ -5,6 +5,81 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-01-24
+
+### 🔄 BREAKING CHANGE: ContentItem Entity Conversion
+
+This release converts ContentItem from an immutable value object to a mutable entity, representing a significant architectural shift that improves usability while maintaining data integrity.
+
+### ✨ Added
+- **Getter Methods** - Complete encapsulation with `getId()`, `getType()`, `getTitle()`, `getSummary()`, `getBlocks()`, `getCreatedAt()`, `getUpdatedAt()`
+- **Setter Methods** - Mutable operations with `setType()`, `setTitle()`, `setSummary()`, `setBlocks()`, `addBlock()`
+- **Automatic Timestamps** - `updatedAt` automatically updated when properties change
+- **Enhanced Validation** - All validation logic preserved in setter methods
+
+### 🔄 Changed
+- **ContentItem Architecture** - Converted from immutable value object to mutable entity
+- **Property Access** - All properties now private with getter/setter encapsulation
+- **Block Management** - `addBlock()` now modifies the same object (returns `void`)
+- **Repository Layer** - Updated to use new getter methods for property access
+
+### 🗑️ Removed
+- **Immutable Methods** - Removed `withTitle()`, `withSummary()`, `withBlocks()` methods
+- **Public Properties** - All properties now private (breaking change)
+- **Method Chaining** - Removed fluent interface for content modification
+
+### 🔧 Technical Improvements
+- **Better Encapsulation** - Proper object-oriented design with private properties
+- **Maintained Validation** - All business rules and validation logic preserved
+- **Type Safety** - Full type hints and static analysis compliance maintained
+- **Test Coverage** - All 315 tests updated and passing with 1,673 assertions
+
+### 📊 Impact
+- **Breaking Change** - Requires code updates for property access and modification patterns
+- **Improved Usability** - More intuitive mutable entity pattern
+- **Better Performance** - Eliminates object creation overhead for updates
+- **Enhanced Maintainability** - Cleaner separation between data and behavior
+
+### 🔄 Migration Guide
+
+**Before (v0.2.0 - Immutable Value Object):**
+```php
+// Property access
+$title = $content->title;
+$blocks = $content->blocks;
+
+// Updates (created new instances)
+$updated = $content->withTitle('New Title');
+$withBlocks = $content->withBlocks([$block1, $block2]);
+$withNewBlock = $content->addBlock($newBlock);
+```
+
+**After (v0.3.0 - Mutable Entity):**
+```php
+// Property access (use getters)
+$title = $content->getTitle();
+$blocks = $content->getBlocks();
+
+// Updates (modify same object)
+$content->setTitle('New Title');
+$content->setBlocks([$block1, $block2]);
+$content->addBlock($newBlock); // void return
+```
+
+### 📝 Migration Steps
+1. **Update Property Access** - Replace direct property access with getter methods
+2. **Update Modifications** - Replace `with*` methods with `set*` methods
+3. **Handle Return Values** - `addBlock()` now returns `void` instead of `self`
+4. **Update Tests** - Modify test assertions to use new getter methods
+
+### ✅ Compatibility
+- **PHP Version** - Still requires PHP 8.3+
+- **Dependencies** - No changes to external dependencies
+- **Database Schema** - No database changes required
+- **Validation Rules** - All validation logic unchanged
+
+---
+
 ## [0.2.0] - 2025-01-23
 
 ### 🧹 Repository Architecture Cleanup
@@ -58,7 +133,7 @@ This is the initial release of the Portable Content PHP library, representing th
 ### ✨ Added
 
 #### Core Domain Objects
-- **ContentItem** - Immutable aggregate root with metadata and blocks
+- **ContentItem** - Mutable entity aggregate root with metadata and blocks
 - **MarkdownBlock** - Markdown content block implementation with full validation
 - **BlockInterface** - Extensible contract for future block types
 
@@ -110,9 +185,9 @@ This is the initial release of the Portable Content PHP library, representing th
 
 ### 🔧 Technical Features
 
-#### Type Safety & Immutability
+#### Type Safety & Entity Design
 - **PHP 8.3+ Compatibility** - Modern PHP features and strict typing
-- **Immutable Domain Objects** - Thread-safe, mutation-free design
+- **Mutable Entity Objects** - Proper encapsulation with getter/setter design
 - **Comprehensive Type Hints** - Full static analysis compliance
 - **Defensive Programming** - Robust error handling and validation
 
@@ -190,4 +265,4 @@ The library is ready for production use in content management applications requi
 
 ---
 
-**Full Changelog**: https://github.com/portable-content/portable-content-php/compare/v0.1.0...v0.2.0
+**Full Changelog**: https://github.com/portable-content/portable-content-php/compare/v0.2.0...v0.3.0

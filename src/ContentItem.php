@@ -152,6 +152,4 @@ class ContentItem
     {
         return $this->updatedAt;
     }
-
-
 }

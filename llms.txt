@@ -7,7 +7,7 @@ This file provides essential information for Large Language Models (LLMs) workin
 **Portable Content PHP** is a production-ready PHP 8.3+ library for managing structured content with markdown blocks. It provides a complete content management system with validation, sanitization, and persistence.
 
 **Key Features:**
-- Immutable domain objects with type safety
+- Mutable entity objects with proper encapsulation and type safety
 - Comprehensive input validation and sanitization
 - Repository pattern for data persistence
 - Extensible block system (currently supports Markdown)
@@ -32,7 +32,7 @@ $repository = RepositoryFactory::createInMemoryRepository();
 $repository->save($content);
 
 // Retrieve content
-$retrieved = $repository->findById($content->id);
+$retrieved = $repository->findById($content->getId());
 ```
 
 ### With Input Validation
@@ -68,25 +68,26 @@ if ($result->isValid()) {
 
 ## Core Classes Reference
 
-### ContentItem (Immutable Aggregate Root)
+### ContentItem (Mutable Entity Aggregate Root)
 ```php
 // Creation
 ContentItem::create(string $type, ?string $title = null, ?string $summary = null, array $blocks = [])
 
-// Updates (returns new instance)
-$content->withTitle(string $title)
-$content->withSummary(string $summary)
-$content->withBlocks(array $blocks)
-$content->addBlock(BlockInterface $block)
+// Getters
+$content->getId()         // string (UUID)
+$content->getType()       // string
+$content->getTitle()      // ?string
+$content->getSummary()    // ?string
+$content->getBlocks()     // BlockInterface[]
+$content->getCreatedAt()  // DateTimeImmutable
+$content->getUpdatedAt()  // DateTimeImmutable
 
-// Properties (readonly)
-$content->id          // string (UUID)
-$content->type        // string
-$content->title       // ?string
-$content->summary     // ?string
-$content->blocks      // BlockInterface[]
-$content->createdAt   // DateTimeImmutable
-$content->updatedAt   // DateTimeImmutable
+// Setters (modifies same instance)
+$content->setType(string $type)
+$content->setTitle(?string $title)
+$content->setSummary(?string $summary)
+$content->setBlocks(array $blocks)
+$content->addBlock(BlockInterface $block)  // void return
 ```
 
 ### MarkdownBlock (Immutable Block Implementation)
@@ -97,10 +98,10 @@ MarkdownBlock::create(string $source)
 // Updates
 $block->withSource(string $source)
 
-// Properties
-$block->id          // string (UUID)
-$block->source      // string (markdown content)
-$block->createdAt   // DateTimeImmutable
+// Getters
+$block->getId()         // string (UUID)
+$block->source          // string (markdown content) - still public readonly
+$block->getCreatedAt()  // DateTimeImmutable
 
 // Methods
 $block->getId()
@@ -179,7 +180,7 @@ function createContentEndpoint(array $requestData): array {
         
         $repository->save($content);
         
-        return ['success' => true, 'id' => $content->id];
+        return ['success' => true, 'id' => $content->getId()];
     } catch (Exception $e) {
         return ['success' => false, 'error' => $e->getMessage()];
     }
@@ -195,9 +196,9 @@ $repository->save($content);
 // Read
 $content = $repository->findById($id);
 
-// Update (immutable)
-$updated = $content->withTitle('New Title');
-$repository->save($updated);
+// Update (mutable)
+$content->setTitle('New Title');
+$repository->save($content);
 
 // Delete
 $repository->delete($id);
@@ -235,7 +236,7 @@ class MyTest extends TestCase {
         $content = ContentItem::create('test', 'Test');
         $this->repository->save($content);
         
-        $retrieved = $this->repository->findById($content->id);
+        $retrieved = $this->repository->findById($content->getId());
         $this->assertNotNull($retrieved);
     }
 }
@@ -243,10 +244,11 @@ class MyTest extends TestCase {
 
 ## Important Notes for LLMs
 
-### 1. Immutability
-- All domain objects are immutable
-- Updates return new instances, don't modify existing ones
-- Use `with*()` methods for updates
+### 1. Entity Design
+- ContentItem is a mutable entity with proper encapsulation
+- Use getter methods to access properties: `getId()`, `getTitle()`, etc.
+- Use setter methods to modify properties: `setTitle()`, `setBlocks()`, etc.
+- MarkdownBlock remains immutable (value object pattern)
 
 ### 2. Type Safety
 - Library uses strict typing (`declare(strict_types=1);`)
@@ -326,4 +328,4 @@ CREATE TABLE markdown_blocks (
 - Comprehensive test suite
 - GitHub Actions CI/CD
 
-This library is production-ready and follows PHP best practices. When generating code, always respect the immutable design, use proper validation, and follow the established patterns.
+This library is production-ready and follows PHP best practices. When generating code, always respect the entity design patterns, use getter/setter methods for ContentItem, use proper validation, and follow the established patterns.

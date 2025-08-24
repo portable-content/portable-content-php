@@ -1,6 +1,6 @@
 # Portable Content PHP
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/portable-content/portable-content-php/releases/tag/v0.2.0)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/portable-content/portable-content-php/releases/tag/v0.3.0)
 [![codecov](https://codecov.io/gh/portable-content/portable-content-php/graph/badge.svg?token=V5i88ShX88)](https://codecov.io/gh/portable-content/portable-content-php)
 ![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-blue)
 ![PHPStan Level](https://img.shields.io/badge/PHPStan-Level%209-brightgreen)
@@ -266,13 +266,14 @@ composer install
 
 ## 🚀 Release Information
 
-### v0.1.0 - Initial Release
-- **Release Date**: January 23, 2025
+### v0.3.0 - Entity Architecture
+- **Release Date**: January 24, 2025
 - **Status**: Production Ready
 - **PHP Compatibility**: 8.3+
 - **Quality**: PHPStan Level 9, Zero Static Analysis Errors
-- **Testing**: 315 Tests, 1,674 Assertions
+- **Testing**: 315 Tests, 1,673 Assertions
 - **Documentation**: Complete (7 Guides)
+- **Breaking Change**: ContentItem converted from value object to entity
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
 
