@@ -31,7 +31,7 @@ final class RepositoryErrorHandlingTest extends IntegrationTestCase
         $content = ContentItem::create('note', 'Test');
 
         $this->expectException(RepositoryException::class);
-        $this->expectExceptionMessage("Failed to save content '{$content->id}'");
+        $this->expectExceptionMessage("Failed to save content '{$content->getId()}'");
 
         $repository->save($content);
     }
@@ -137,9 +137,8 @@ final class RepositoryErrorHandlingTest extends IntegrationTestCase
         // Make the database read-only to cause a save failure
         $pdo->exec('PRAGMA query_only = ON');
 
-        $content2 = ContentItem::create('note', 'Second Content')
-            ->addBlock(MarkdownBlock::create('# Test Block'))
-        ;
+        $content2 = ContentItem::create('note', 'Second Content');
+        $content2->addBlock(MarkdownBlock::create('# Test Block'));
 
         try {
             $repository->save($content2);
@@ -178,7 +177,7 @@ final class RepositoryErrorHandlingTest extends IntegrationTestCase
         // Verify content was saved but block was skipped
         $retrieved = $repository->findById('test-id');
         $this->assertNotNull($retrieved);
-        $this->assertCount(0, $retrieved->blocks); // Block should be skipped
+        $this->assertCount(0, $retrieved->getBlocks()); // Block should be skipped
     }
 
     public function testDatabaseConnectionFailure(): void

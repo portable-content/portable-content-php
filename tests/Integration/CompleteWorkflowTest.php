@@ -101,25 +101,25 @@ final class CompleteWorkflowTest extends TestCase
             [$markdownBlock]
         );
 
-        $this->assertEquals('note', $contentItem->type);
-        $this->assertEquals('My First Note', $contentItem->title);
-        $this->assertEquals("A test note\nwith\n\nmultiple lines", $contentItem->summary);
-        $this->assertCount(1, $contentItem->blocks);
+        $this->assertEquals('note', $contentItem->getType());
+        $this->assertEquals('My First Note', $contentItem->getTitle());
+        $this->assertEquals("A test note\nwith\n\nmultiple lines", $contentItem->getSummary());
+        $this->assertCount(1, $contentItem->getBlocks());
 
         // Step 4: Save to repository/database
         $this->repository->save($contentItem);
 
         // Step 5: Retrieve from database and verify persistence
-        $retrievedContent = $this->repository->findById($contentItem->id);
+        $retrievedContent = $this->repository->findById($contentItem->getId());
 
         $this->assertNotNull($retrievedContent);
-        $this->assertEquals($contentItem->id, $retrievedContent->id);
-        $this->assertEquals($contentItem->type, $retrievedContent->type);
-        $this->assertEquals($contentItem->title, $retrievedContent->title);
-        $this->assertEquals($contentItem->summary, $retrievedContent->summary);
-        $this->assertCount(1, $retrievedContent->blocks);
+        $this->assertEquals($contentItem->getId(), $retrievedContent->getId());
+        $this->assertEquals($contentItem->getType(), $retrievedContent->getType());
+        $this->assertEquals($contentItem->getTitle(), $retrievedContent->getTitle());
+        $this->assertEquals($contentItem->getSummary(), $retrievedContent->getSummary());
+        $this->assertCount(1, $retrievedContent->getBlocks());
 
-        $retrievedBlock = $retrievedContent->blocks[0];
+        $retrievedBlock = $retrievedContent->getBlocks()[0];
         $this->assertInstanceOf(MarkdownBlock::class, $retrievedBlock);
         $this->assertEquals($markdownBlock->source, $retrievedBlock->source);
 
@@ -147,34 +147,32 @@ final class CompleteWorkflowTest extends TestCase
         $this->assertIsString($updatedSanitizedData['summary']);
 
         $updatedBlock = MarkdownBlock::create($updatedSanitizedData['blocks'][0]['source']);
-        $updatedContent = $contentItem
-            ->withTitle($updatedSanitizedData['title'])
-            ->withSummary($updatedSanitizedData['summary'])
-            ->withBlocks([$updatedBlock])
-        ;
+        $contentItem->setTitle($updatedSanitizedData['title']);
+        $contentItem->setSummary($updatedSanitizedData['summary']);
+        $contentItem->setBlocks([$updatedBlock]);
 
-        $this->repository->save($updatedContent);
+        $this->repository->save($contentItem);
 
         // Step 7: Verify update persisted
-        $finalRetrievedContent = $this->repository->findById($contentItem->id);
+        $finalRetrievedContent = $this->repository->findById($contentItem->getId());
 
         $this->assertNotNull($finalRetrievedContent);
-        $this->assertEquals('Updated Title', $finalRetrievedContent->title);
-        $this->assertEquals('Updated summary', $finalRetrievedContent->summary);
-        $this->assertInstanceOf(MarkdownBlock::class, $finalRetrievedContent->blocks[0]);
+        $this->assertEquals('Updated Title', $finalRetrievedContent->getTitle());
+        $this->assertEquals('Updated summary', $finalRetrievedContent->getSummary());
+        $this->assertInstanceOf(MarkdownBlock::class, $finalRetrievedContent->getBlocks()[0]);
         /** @var MarkdownBlock $firstBlock */
-        $firstBlock = $finalRetrievedContent->blocks[0];
+        $firstBlock = $finalRetrievedContent->getBlocks()[0];
         $this->assertStringContainsString('Updated Content', $firstBlock->source);
 
         // Step 8: List all content
         $allContent = $this->repository->findAll();
         $this->assertCount(1, $allContent);
-        $this->assertEquals($updatedContent->id, $allContent[0]->id);
+        $this->assertEquals($contentItem->getId(), $allContent[0]->getId());
 
         // Step 9: Delete workflow
-        $this->repository->delete($contentItem->id);
+        $this->repository->delete($contentItem->getId());
 
-        $deletedContent = $this->repository->findById($contentItem->id);
+        $deletedContent = $this->repository->findById($contentItem->getId());
         $this->assertNull($deletedContent);
 
         $emptyList = $this->repository->findAll();
@@ -231,17 +229,17 @@ final class CompleteWorkflowTest extends TestCase
 
         // Save and retrieve
         $this->repository->save($contentItem);
-        $retrievedContent = $this->repository->findById($contentItem->id);
+        $retrievedContent = $this->repository->findById($contentItem->getId());
 
         $this->assertNotNull($retrievedContent);
-        $this->assertCount(3, $retrievedContent->blocks);
+        $this->assertCount(3, $retrievedContent->getBlocks());
 
         /** @var MarkdownBlock $block0 */
-        $block0 = $retrievedContent->blocks[0];
+        $block0 = $retrievedContent->getBlocks()[0];
         /** @var MarkdownBlock $block1 */
-        $block1 = $retrievedContent->blocks[1];
+        $block1 = $retrievedContent->getBlocks()[1];
         /** @var MarkdownBlock $block2 */
-        $block2 = $retrievedContent->blocks[2];
+        $block2 = $retrievedContent->getBlocks()[2];
 
         $this->assertStringContainsString('Introduction', $block0->source);
         $this->assertStringContainsString('Section 1', $block1->source);

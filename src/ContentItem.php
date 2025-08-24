@@ -10,18 +10,35 @@ use Ramsey\Uuid\Uuid;
 
 class ContentItem
 {
+    private string $id;
+    private string $type;
+    private ?string $title;
+    private ?string $summary;
+    /** @var BlockInterface[] */
+    private array $blocks;
+    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $updatedAt;
+
     /**
      * @param BlockInterface[] $blocks
      */
     public function __construct(
-        public readonly string $id,
-        public readonly string $type,
-        public readonly ?string $title,
-        public readonly ?string $summary,
-        public readonly array $blocks,
-        public readonly \DateTimeImmutable $createdAt,
-        public readonly \DateTimeImmutable $updatedAt,
-    ) {}
+        string $id,
+        string $type,
+        ?string $title,
+        ?string $summary,
+        array $blocks,
+        \DateTimeImmutable $createdAt,
+        \DateTimeImmutable $updatedAt,
+    ) {
+        $this->id = $id;
+        $this->type = $type;
+        $this->title = $title;
+        $this->summary = $summary;
+        $this->blocks = $blocks;
+        $this->createdAt = $createdAt;
+        $this->updatedAt = $updatedAt;
+    }
 
     /**
      * @param BlockInterface[] $blocks
@@ -46,20 +63,69 @@ class ContentItem
         $now = new \DateTimeImmutable();
 
         return new self(
-            id: Uuid::uuid4()->toString(),
-            type: trim($type),
-            title: $title ? trim($title) : null,
-            summary: $summary ? trim($summary) : null,
-            blocks: $blocks,
-            createdAt: $now,
-            updatedAt: $now
+            Uuid::uuid4()->toString(),
+            trim($type),
+            $title ? trim($title) : null,
+            $summary ? trim($summary) : null,
+            $blocks,
+            $now,
+            $now
         );
+    }
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    public function setType(string $type): void
+    {
+        if ('' === trim($type)) {
+            throw InvalidContentException::emptyType();
+        }
+        $this->type = trim($type);
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function getTitle(): ?string
+    {
+        return $this->title;
+    }
+
+    public function setTitle(?string $title): void
+    {
+        $this->title = $title ? trim($title) : null;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function getSummary(): ?string
+    {
+        return $this->summary;
+    }
+
+    public function setSummary(?string $summary): void
+    {
+        $this->summary = $summary ? trim($summary) : null;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    /**
+     * @return BlockInterface[]
+     */
+    public function getBlocks(): array
+    {
+        return $this->blocks;
     }
 
     /**
      * @param BlockInterface[] $blocks
      */
-    public function withBlocks(array $blocks): self
+    public function setBlocks(array $blocks): void
     {
         // Validate all blocks implement BlockInterface
         foreach ($blocks as $block) {
@@ -67,49 +133,25 @@ class ContentItem
                 throw InvalidContentException::invalidBlockType($block);
             }
         }
-
-        return new self(
-            id: $this->id,
-            type: $this->type,
-            title: $this->title,
-            summary: $this->summary,
-            blocks: $blocks,
-            createdAt: $this->createdAt,
-            updatedAt: new \DateTimeImmutable()
-        );
+        $this->blocks = $blocks;
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function withTitle(?string $title): self
+    public function addBlock(BlockInterface $block): void
     {
-        return new self(
-            id: $this->id,
-            type: $this->type,
-            title: $title,
-            summary: $this->summary,
-            blocks: $this->blocks,
-            createdAt: $this->createdAt,
-            updatedAt: new \DateTimeImmutable()
-        );
+        $this->blocks[] = $block;
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function withSummary(?string $summary): self
+    public function getCreatedAt(): \DateTimeImmutable
     {
-        return new self(
-            id: $this->id,
-            type: $this->type,
-            title: $this->title,
-            summary: $summary,
-            blocks: $this->blocks,
-            createdAt: $this->createdAt,
-            updatedAt: new \DateTimeImmutable()
-        );
+        return $this->createdAt;
     }
 
-    public function addBlock(BlockInterface $block): self
+    public function getUpdatedAt(): \DateTimeImmutable
     {
-        $blocks = $this->blocks;
-        $blocks[] = $block;
-
-        return $this->withBlocks($blocks);
+        return $this->updatedAt;
     }
+
+
 }

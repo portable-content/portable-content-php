@@ -95,15 +95,15 @@ final class PerformanceAndEdgeCaseTest extends TestCase
         $this->repository->save($content);
 
         // Retrieve from database
-        $retrieved = $this->repository->findById($content->id);
+        $retrieved = $this->repository->findById($content->getId());
 
         $endTime = microtime(true);
         $processingTime = $endTime - $startTime;
 
         $this->assertNotNull($retrieved);
-        $this->assertEquals($content->id, $retrieved->id);
+        $this->assertEquals($content->getId(), $retrieved->getId());
         /** @var MarkdownBlock $firstBlock */
-        $firstBlock = $retrieved->blocks[0];
+        $firstBlock = $retrieved->getBlocks()[0];
         $this->assertStringContainsString('Section', $firstBlock->source);
 
         // Performance assertion - should complete within reasonable time (adjust as needed)
@@ -151,7 +151,7 @@ final class PerformanceAndEdgeCaseTest extends TestCase
             );
 
             $this->repository->save($content);
-            $contentIds[] = $content->id;
+            $contentIds[] = $content->getId();
 
             // Verify save worked by checking count periodically
             if (0 === $i % 10) {
@@ -212,15 +212,15 @@ final class PerformanceAndEdgeCaseTest extends TestCase
         );
 
         $this->repository->save($content);
-        $retrieved = $this->repository->findById($content->id);
+        $retrieved = $this->repository->findById($content->getId());
 
         $this->assertNotNull($retrieved);
-        $this->assertNotNull($retrieved->title);
-        $this->assertStringContainsString('🚀', $retrieved->title);
-        $this->assertNotNull($retrieved->summary);
-        $this->assertStringContainsString('中文', $retrieved->summary);
+        $this->assertNotNull($retrieved->getTitle());
+        $this->assertStringContainsString('🚀', $retrieved->getTitle());
+        $this->assertNotNull($retrieved->getSummary());
+        $this->assertStringContainsString('中文', $retrieved->getSummary());
         /** @var MarkdownBlock $firstBlock */
-        $firstBlock = $retrieved->blocks[0];
+        $firstBlock = $retrieved->getBlocks()[0];
         $this->assertStringContainsString('你好世界', $firstBlock->source);
         $this->assertStringContainsString('🎉', $firstBlock->source);
     }
@@ -270,10 +270,10 @@ final class PerformanceAndEdgeCaseTest extends TestCase
         );
 
         $this->repository->save($content);
-        $retrieved = $this->repository->findById($content->id);
+        $retrieved = $this->repository->findById($content->getId());
 
         $this->assertNotNull($retrieved);
-        $this->assertEquals('Mixed Whitespace', $retrieved->title);
+        $this->assertEquals('Mixed Whitespace', $retrieved->getTitle());
     }
 
     public function testEmptyAndNullValueHandling(): void
@@ -308,13 +308,13 @@ final class PerformanceAndEdgeCaseTest extends TestCase
         );
 
         $this->repository->save($content);
-        $retrieved = $this->repository->findById($content->id);
+        $retrieved = $this->repository->findById($content->getId());
 
         $this->assertNotNull($retrieved);
-        $this->assertEquals('note', $retrieved->type);
-        $this->assertNull($retrieved->title);
-        $this->assertNull($retrieved->summary);
-        $this->assertCount(1, $retrieved->blocks);
+        $this->assertEquals('note', $retrieved->getType());
+        $this->assertNull($retrieved->getTitle());
+        $this->assertNull($retrieved->getSummary());
+        $this->assertCount(1, $retrieved->getBlocks());
     }
 
     public function testConcurrentOperationsSimulation(): void
@@ -364,29 +364,29 @@ final class PerformanceAndEdgeCaseTest extends TestCase
 
         // Rapid read operations
         for ($i = 0; $i < 10; ++$i) {
-            $retrieved1 = $this->repository->findById($content1->id);
-            $retrieved2 = $this->repository->findById($content2->id);
+            $retrieved1 = $this->repository->findById($content1->getId());
+            $retrieved2 = $this->repository->findById($content2->getId());
 
             $this->assertNotNull($retrieved1);
             $this->assertNotNull($retrieved2);
-            $this->assertEquals('Concurrent Test 1', $retrieved1->title);
-            $this->assertEquals('Concurrent Test 2', $retrieved2->title);
+            $this->assertEquals('Concurrent Test 1', $retrieved1->getTitle());
+            $this->assertEquals('Concurrent Test 2', $retrieved2->getTitle());
         }
 
         // Update operations
-        $updatedContent1 = $content1->withTitle('Updated Concurrent Test 1');
-        $updatedContent2 = $content2->withTitle('Updated Concurrent Test 2');
+        $content1->setTitle('Updated Concurrent Test 1');
+        $content2->setTitle('Updated Concurrent Test 2');
 
-        $this->repository->save($updatedContent1);
-        $this->repository->save($updatedContent2);
+        $this->repository->save($content1);
+        $this->repository->save($content2);
 
         // Verify updates
-        $finalRetrieved1 = $this->repository->findById($content1->id);
-        $finalRetrieved2 = $this->repository->findById($content2->id);
+        $finalRetrieved1 = $this->repository->findById($content1->getId());
+        $finalRetrieved2 = $this->repository->findById($content2->getId());
 
         $this->assertNotNull($finalRetrieved1);
         $this->assertNotNull($finalRetrieved2);
-        $this->assertEquals('Updated Concurrent Test 1', $finalRetrieved1->title);
-        $this->assertEquals('Updated Concurrent Test 2', $finalRetrieved2->title);
+        $this->assertEquals('Updated Concurrent Test 1', $finalRetrieved1->getTitle());
+        $this->assertEquals('Updated Concurrent Test 2', $finalRetrieved2->getTitle());
     }
 }

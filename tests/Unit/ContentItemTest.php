@@ -18,23 +18,23 @@ final class ContentItemTest extends TestCase
     {
         $content = ContentItem::create('note', 'Test Title', 'Test Summary');
 
-        $this->assertNotEmpty($content->id);
-        $this->assertEquals('note', $content->type);
-        $this->assertEquals('Test Title', $content->title);
-        $this->assertEquals('Test Summary', $content->summary);
-        $this->assertEmpty($content->blocks);
-        $this->assertInstanceOf(\DateTimeImmutable::class, $content->createdAt);
-        $this->assertInstanceOf(\DateTimeImmutable::class, $content->updatedAt);
+        $this->assertNotEmpty($content->getId());
+        $this->assertEquals('note', $content->getType());
+        $this->assertEquals('Test Title', $content->getTitle());
+        $this->assertEquals('Test Summary', $content->getSummary());
+        $this->assertEmpty($content->getBlocks());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $content->getCreatedAt());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $content->getUpdatedAt());
     }
 
     public function testCreateWithMinimalData(): void
     {
         $content = ContentItem::create('note');
 
-        $this->assertEquals('note', $content->type);
-        $this->assertNull($content->title);
-        $this->assertNull($content->summary);
-        $this->assertEmpty($content->blocks);
+        $this->assertEquals('note', $content->getType());
+        $this->assertNull($content->getTitle());
+        $this->assertNull($content->getSummary());
+        $this->assertEmpty($content->getBlocks());
     }
 
     public function testCreateWithEmptyTypeThrowsException(): void
@@ -69,9 +69,9 @@ final class ContentItemTest extends TestCase
 
         $content = ContentItem::create('note', 'Test', null, [$block1, $block2]);
 
-        $this->assertCount(2, $content->blocks);
-        $this->assertSame($block1, $content->blocks[0]);
-        $this->assertSame($block2, $content->blocks[1]);
+        $this->assertCount(2, $content->getBlocks());
+        $this->assertSame($block1, $content->getBlocks()[0]);
+        $this->assertSame($block2, $content->getBlocks()[1]);
     }
 
     public function testAddBlock(): void
@@ -79,49 +79,52 @@ final class ContentItemTest extends TestCase
         $content = ContentItem::create('note', 'Test');
         $block = MarkdownBlock::create('# Test Block');
 
-        $updatedContent = $content->addBlock($block);
+        $this->assertCount(0, $content->getBlocks()); // Initially empty
 
-        $this->assertCount(0, $content->blocks); // Original unchanged
-        $this->assertCount(1, $updatedContent->blocks);
-        $this->assertSame($block, $updatedContent->blocks[0]);
-        $this->assertNotSame($content, $updatedContent);
+        $content->addBlock($block);
+
+        $this->assertCount(1, $content->getBlocks()); // Now has one block
+        $this->assertSame($block, $content->getBlocks()[0]);
     }
 
-    public function testWithTitle(): void
+    public function testSetTitle(): void
     {
         $content = ContentItem::create('note', 'Original Title');
-        $updatedContent = $content->withTitle('New Title');
 
-        $this->assertEquals('Original Title', $content->title); // Original unchanged
-        $this->assertEquals('New Title', $updatedContent->title);
-        $this->assertNotSame($content, $updatedContent);
+        $this->assertEquals('Original Title', $content->getTitle());
+
+        $content->setTitle('New Title');
+
+        $this->assertEquals('New Title', $content->getTitle());
     }
 
-    public function testWithTitleNull(): void
+    public function testSetTitleNull(): void
     {
         $content = ContentItem::create('note', 'Original Title');
-        $updatedContent = $content->withTitle(null);
 
-        $this->assertEquals('Original Title', $content->title); // Original unchanged
-        $this->assertNull($updatedContent->title);
+        $this->assertEquals('Original Title', $content->getTitle());
+
+        $content->setTitle(null);
+
+        $this->assertNull($content->getTitle());
     }
 
-    public function testWithBlocks(): void
+    public function testSetBlocks(): void
     {
         $content = ContentItem::create('note');
         $block1 = MarkdownBlock::create('# Block 1');
         $block2 = MarkdownBlock::create('# Block 2');
 
-        $updatedContent = $content->withBlocks([$block1, $block2]);
+        $this->assertCount(0, $content->getBlocks()); // Initially empty
 
-        $this->assertCount(0, $content->blocks); // Original unchanged
-        $this->assertCount(2, $updatedContent->blocks);
-        $this->assertSame($block1, $updatedContent->blocks[0]);
-        $this->assertSame($block2, $updatedContent->blocks[1]);
-        $this->assertNotSame($content, $updatedContent);
+        $content->setBlocks([$block1, $block2]);
+
+        $this->assertCount(2, $content->getBlocks());
+        $this->assertSame($block1, $content->getBlocks()[0]);
+        $this->assertSame($block2, $content->getBlocks()[1]);
     }
 
-    public function testWithBlocksValidatesBlockTypes(): void
+    public function testSetBlocksValidatesBlockTypes(): void
     {
         $content = ContentItem::create('note');
 
@@ -129,45 +132,47 @@ final class ContentItemTest extends TestCase
         $this->expectExceptionMessage('Expected BlockInterface implementation, got string');
 
         // @phpstan-ignore-next-line
-        $content->withBlocks(['invalid block']);
+        $content->setBlocks(['invalid block']);
     }
 
-    public function testImmutability(): void
+    public function testMutability(): void
     {
         $content = ContentItem::create('note', 'Test');
         $block = MarkdownBlock::create('# Test');
 
-        $modified = $content->addBlock($block)->withTitle('New Title');
+        // Test that the same object is modified
+        $this->assertEquals('Test', $content->getTitle());
+        $this->assertCount(0, $content->getBlocks());
 
-        // Original should be unchanged
-        $this->assertEquals('Test', $content->title);
-        $this->assertCount(0, $content->blocks);
+        $content->addBlock($block);
+        $content->setTitle('New Title');
 
-        // Modified should have changes
-        $this->assertEquals('New Title', $modified->title);
-        $this->assertCount(1, $modified->blocks);
+        // Same object should have changes
+        $this->assertEquals('New Title', $content->getTitle());
+        $this->assertCount(1, $content->getBlocks());
     }
 
     public function testUpdatedAtChangesOnModification(): void
     {
         $content = ContentItem::create('note', 'Test');
+        $originalUpdatedAt = $content->getUpdatedAt();
 
         // Small delay to ensure different timestamps
         usleep(1000);
 
-        $modified = $content->withTitle('New Title');
+        $content->setTitle('New Title');
 
-        $this->assertGreaterThan($content->updatedAt, $modified->updatedAt);
-        $this->assertEquals($content->createdAt, $modified->createdAt); // createdAt preserved
+        $this->assertGreaterThan($originalUpdatedAt, $content->getUpdatedAt());
+        $this->assertEquals($content->getCreatedAt(), $content->getCreatedAt()); // createdAt preserved
     }
 
     public function testTrimsWhitespaceInFields(): void
     {
         $content = ContentItem::create('  note  ', '  Title  ', '  Summary  ');
 
-        $this->assertEquals('note', $content->type);
-        $this->assertEquals('Title', $content->title);
-        $this->assertEquals('Summary', $content->summary);
+        $this->assertEquals('note', $content->getType());
+        $this->assertEquals('Title', $content->getTitle());
+        $this->assertEquals('Summary', $content->getSummary());
     }
 
     public function testCompleteContentCreationWorkflow(): void
@@ -178,37 +183,35 @@ final class ContentItemTest extends TestCase
         $listBlock = MarkdownBlock::create("## Tasks\n\n- [ ] Task 1\n- [x] Task 2\n- [ ] Task 3");
 
         // Create content item and add blocks one by one
-        $content = ContentItem::create('note', 'My First Note', 'A comprehensive test note')
-            ->addBlock($titleBlock)
-            ->addBlock($contentBlock)
-            ->addBlock($listBlock)
-        ;
+        $content = ContentItem::create('note', 'My First Note', 'A comprehensive test note');
+        $content->addBlock($titleBlock);
+        $content->addBlock($contentBlock);
+        $content->addBlock($listBlock);
 
         // Verify the complete structure
-        $this->assertEquals('note', $content->type);
-        $this->assertEquals('My First Note', $content->title);
-        $this->assertEquals('A comprehensive test note', $content->summary);
-        $this->assertCount(3, $content->blocks);
+        $this->assertEquals('note', $content->getType());
+        $this->assertEquals('My First Note', $content->getTitle());
+        $this->assertEquals('A comprehensive test note', $content->getSummary());
+        $this->assertCount(3, $content->getBlocks());
 
         // Verify block content and types
-        $this->assertEquals('# My First Note', $content->blocks[0]->getContent());
-        $this->assertEquals('markdown', $content->blocks[0]->getType());
-        $this->assertFalse($content->blocks[0]->isEmpty());
+        $blocks = $content->getBlocks();
+        $this->assertEquals('# My First Note', $blocks[0]->getContent());
+        $this->assertEquals('markdown', $blocks[0]->getType());
+        $this->assertFalse($blocks[0]->isEmpty());
 
-        $this->assertEquals('This is the main content of my note.', $content->blocks[1]->getContent());
-        $this->assertEquals(8, $content->blocks[1]->getWordCount());
+        $this->assertEquals('This is the main content of my note.', $blocks[1]->getContent());
+        $this->assertEquals(8, $blocks[1]->getWordCount());
 
-        $this->assertStringContainsString('Tasks', $content->blocks[2]->getContent());
-        $this->assertGreaterThan(5, $content->blocks[2]->getWordCount());
+        $this->assertStringContainsString('Tasks', $blocks[2]->getContent());
+        $this->assertGreaterThan(5, $blocks[2]->getWordCount());
 
-        // Test immutability in workflow
-        $originalBlockCount = count($content->blocks);
-        $newContent = $content->withTitle('Updated Title');
+        // Test mutability in workflow
+        $originalBlockCount = count($content->getBlocks());
+        $content->setTitle('Updated Title');
 
-        $this->assertEquals($originalBlockCount, count($content->blocks)); // Original unchanged
-        $this->assertEquals('My First Note', $content->title); // Original title unchanged
-        $this->assertEquals('Updated Title', $newContent->title); // New title applied
-        $this->assertEquals($originalBlockCount, count($newContent->blocks)); // Blocks preserved
+        $this->assertEquals($originalBlockCount, count($content->getBlocks())); // Blocks preserved
+        $this->assertEquals('Updated Title', $content->getTitle()); // Title updated
     }
 
     public function testBlockInterfacePolymorphism(): void
@@ -223,7 +226,7 @@ final class ContentItemTest extends TestCase
         $content = ContentItem::create('article', 'Test Article', null, $blocks);
 
         // Verify all blocks are treated polymorphically
-        foreach ($content->blocks as $block) {
+        foreach ($content->getBlocks() as $block) {
             $this->assertNotEmpty($block->getId());
             $this->assertNotNull($block->getCreatedAt());
             $this->assertEquals('markdown', $block->getType());
@@ -233,7 +236,7 @@ final class ContentItemTest extends TestCase
 
         // Test that we can work with blocks through the interface
         $totalWords = array_reduce(
-            $content->blocks,
+            $content->getBlocks(),
             fn(int $total, $block) => $total + $block->getWordCount(),
             0
         );

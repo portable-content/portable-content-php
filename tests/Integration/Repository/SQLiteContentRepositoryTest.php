@@ -29,29 +29,28 @@ final class SQLiteContentRepositoryTest extends IntegrationTestCase
         $block1 = MarkdownBlock::create('# Title');
         $block2 = MarkdownBlock::create('Some content here.');
 
-        $content = ContentItem::create('note', 'Test Note', 'A test note')
-            ->addBlock($block1)
-            ->addBlock($block2)
-        ;
+        $content = ContentItem::create('note', 'Test Note', 'A test note');
+        $content->addBlock($block1);
+        $content->addBlock($block2);
 
         // Save content
         $this->repository->save($content);
 
         // Retrieve content
-        $retrieved = $this->repository->findById($content->id);
+        $retrieved = $this->repository->findById($content->getId());
 
         $this->assertNotNull($retrieved);
-        $this->assertEquals($content->id, $retrieved->id);
-        $this->assertEquals($content->type, $retrieved->type);
-        $this->assertEquals($content->title, $retrieved->title);
-        $this->assertEquals($content->summary, $retrieved->summary);
-        $this->assertCount(2, $retrieved->blocks);
+        $this->assertEquals($content->getId(), $retrieved->getId());
+        $this->assertEquals($content->getType(), $retrieved->getType());
+        $this->assertEquals($content->getTitle(), $retrieved->getTitle());
+        $this->assertEquals($content->getSummary(), $retrieved->getSummary());
+        $this->assertCount(2, $retrieved->getBlocks());
 
         // Check blocks are loaded correctly
-        $this->assertInstanceOf(MarkdownBlock::class, $retrieved->blocks[0]);
-        $this->assertInstanceOf(MarkdownBlock::class, $retrieved->blocks[1]);
-        $this->assertEquals('# Title', $retrieved->blocks[0]->source);
-        $this->assertEquals('Some content here.', $retrieved->blocks[1]->source);
+        $this->assertInstanceOf(MarkdownBlock::class, $retrieved->getBlocks()[0]);
+        $this->assertInstanceOf(MarkdownBlock::class, $retrieved->getBlocks()[1]);
+        $this->assertEquals('# Title', $retrieved->getBlocks()[0]->source);
+        $this->assertEquals('Some content here.', $retrieved->getBlocks()[1]->source);
     }
 
     public function testFindByIdReturnsNullForNonExistentContent(): void
@@ -67,37 +66,35 @@ final class SQLiteContentRepositoryTest extends IntegrationTestCase
         $this->repository->save($content);
 
         // Update content
-        $updatedContent = $content->withTitle('Updated Title')
-            ->addBlock(MarkdownBlock::create('# New Block'))
-        ;
-        $this->repository->save($updatedContent);
+        $content->setTitle('Updated Title');
+        $content->addBlock(MarkdownBlock::create('# New Block'));
+        $this->repository->save($content);
 
         // Retrieve and verify update
-        $retrieved = $this->repository->findById($content->id);
+        $retrieved = $this->repository->findById($content->getId());
         $this->assertNotNull($retrieved);
-        $this->assertEquals('Updated Title', $retrieved->title);
-        $this->assertCount(1, $retrieved->blocks);
-        $this->assertInstanceOf(MarkdownBlock::class, $retrieved->blocks[0]);
-        $this->assertEquals('# New Block', $retrieved->blocks[0]->source);
+        $this->assertEquals('Updated Title', $retrieved->getTitle());
+        $this->assertCount(1, $retrieved->getBlocks());
+        $this->assertInstanceOf(MarkdownBlock::class, $retrieved->getBlocks()[0]);
+        $this->assertEquals('# New Block', $retrieved->getBlocks()[0]->source);
     }
 
     public function testDelete(): void
     {
         // Create and save content
-        $content = ContentItem::create('note', 'To Delete')
-            ->addBlock(MarkdownBlock::create('# Will be deleted'))
-        ;
+        $content = ContentItem::create('note', 'To Delete');
+        $content->addBlock(MarkdownBlock::create('# Will be deleted'));
         $this->repository->save($content);
 
         // Verify it exists
-        $this->assertTrue($this->repository->exists($content->id));
+        $this->assertTrue($this->repository->exists($content->getId()));
 
         // Delete it
-        $this->repository->delete($content->id);
+        $this->repository->delete($content->getId());
 
         // Verify it's gone
-        $this->assertFalse($this->repository->exists($content->id));
-        $this->assertNull($this->repository->findById($content->id));
+        $this->assertFalse($this->repository->exists($content->getId()));
+        $this->assertNull($this->repository->findById($content->getId()));
     }
 
     public function testDeleteNonExistentContentDoesNotThrow(): void
@@ -122,7 +119,7 @@ final class SQLiteContentRepositoryTest extends IntegrationTestCase
         $this->assertEquals(2, $this->repository->count());
 
         // Delete one
-        $this->repository->delete($content1->id);
+        $this->repository->delete($content1->getId());
         $this->assertEquals(1, $this->repository->count());
     }
 
@@ -130,13 +127,13 @@ final class SQLiteContentRepositoryTest extends IntegrationTestCase
     {
         $content = ContentItem::create('note', 'Test');
 
-        $this->assertFalse($this->repository->exists($content->id));
+        $this->assertFalse($this->repository->exists($content->getId()));
 
         $this->repository->save($content);
-        $this->assertTrue($this->repository->exists($content->id));
+        $this->assertTrue($this->repository->exists($content->getId()));
 
-        $this->repository->delete($content->id);
-        $this->assertFalse($this->repository->exists($content->id));
+        $this->repository->delete($content->getId());
+        $this->assertFalse($this->repository->exists($content->getId()));
     }
 
     public function testFindAllWithPagination(): void
@@ -161,9 +158,9 @@ final class SQLiteContentRepositoryTest extends IntegrationTestCase
 
         // Verify no overlap
         $allIds = array_merge(
-            array_map(fn($c) => $c->id, $page1),
-            array_map(fn($c) => $c->id, $page2),
-            array_map(fn($c) => $c->id, $page3)
+            array_map(fn($c) => $c->getId(), $page1),
+            array_map(fn($c) => $c->getId(), $page2),
+            array_map(fn($c) => $c->getId(), $page3)
         );
         $this->assertCount(5, array_unique($allIds));
     }
@@ -202,30 +199,29 @@ final class SQLiteContentRepositoryTest extends IntegrationTestCase
 
         $this->assertCount(2, $results);
         // Should be ordered by created_at DESC (newest first)
-        $this->assertEquals('Second', $results[0]->title);
-        $this->assertEquals('First', $results[1]->title);
+        $this->assertEquals('Second', $results[0]->getTitle());
+        $this->assertEquals('First', $results[1]->getTitle());
     }
 
     public function testCascadeDeleteRemovesBlocks(): void
     {
         // Create content with blocks
-        $content = ContentItem::create('note', 'With Blocks')
-            ->addBlock(MarkdownBlock::create('# Block 1'))
-            ->addBlock(MarkdownBlock::create('# Block 2'))
-        ;
+        $content = ContentItem::create('note', 'With Blocks');
+        $content->addBlock(MarkdownBlock::create('# Block 1'));
+        $content->addBlock(MarkdownBlock::create('# Block 2'));
 
         $this->repository->save($content);
 
         // Verify blocks exist by retrieving content
-        $retrieved = $this->repository->findById($content->id);
+        $retrieved = $this->repository->findById($content->getId());
         $this->assertNotNull($retrieved);
-        $this->assertCount(2, $retrieved->blocks);
+        $this->assertCount(2, $retrieved->getBlocks());
 
         // Delete content
-        $this->repository->delete($content->id);
+        $this->repository->delete($content->getId());
 
         // Verify content and blocks are gone
-        $this->assertNull($this->repository->findById($content->id));
+        $this->assertNull($this->repository->findById($content->getId()));
 
         // We can't directly query blocks table from here, but the foreign key
         // constraint with CASCADE DELETE should handle this automatically

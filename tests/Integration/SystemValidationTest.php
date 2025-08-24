@@ -114,12 +114,12 @@ final class SystemValidationTest extends TestCase
         );
 
         $this->repository->save($content);
-        $retrieved = $this->repository->findById($content->id);
+        $retrieved = $this->repository->findById($content->getId());
 
         $this->assertNotNull($retrieved);
-        $this->assertEquals($content->id, $retrieved->id);
-        $this->assertEquals('ARTICLE', $retrieved->type); // Preserves case from sanitization
-        $this->assertEquals('Complete System Test', $retrieved->title);
+        $this->assertEquals($content->getId(), $retrieved->getId());
+        $this->assertEquals('ARTICLE', $retrieved->getType()); // Preserves case from sanitization
+        $this->assertEquals('Complete System Test', $retrieved->getTitle());
     }
 
     public function testSanitizationOnlyWorkflow(): void
@@ -272,19 +272,19 @@ final class SystemValidationTest extends TestCase
         // Test repository operations
         $this->repository->save($content);
 
-        $retrieved = $this->repository->findById($content->id);
+        $retrieved = $this->repository->findById($content->getId());
         $this->assertNotNull($retrieved);
-        $this->assertCount(4, $retrieved->blocks);
+        $this->assertCount(4, $retrieved->getBlocks());
 
         // Verify each block was persisted correctly
         /** @var MarkdownBlock $block0 */
-        $block0 = $retrieved->blocks[0];
+        $block0 = $retrieved->getBlocks()[0];
         /** @var MarkdownBlock $block1 */
-        $block1 = $retrieved->blocks[1];
+        $block1 = $retrieved->getBlocks()[1];
         /** @var MarkdownBlock $block2 */
-        $block2 = $retrieved->blocks[2];
+        $block2 = $retrieved->getBlocks()[2];
         /** @var MarkdownBlock $block3 */
-        $block3 = $retrieved->blocks[3];
+        $block3 = $retrieved->getBlocks()[3];
 
         $this->assertStringContainsString('API Overview', $block0->source);
         $this->assertStringContainsString('Authentication', $block1->source);
@@ -297,27 +297,27 @@ final class SystemValidationTest extends TestCase
             MarkdownBlock::create('## Updated Section\n\nNew information here.'),
         ];
 
-        $updatedContent = $content->withBlocks($updatedBlocks);
-        $this->repository->save($updatedContent);
+        $content->setBlocks($updatedBlocks);
+        $this->repository->save($content);
 
-        $retrievedUpdated = $this->repository->findById($content->id);
+        $retrievedUpdated = $this->repository->findById($content->getId());
         $this->assertNotNull($retrievedUpdated);
-        $this->assertCount(2, $retrievedUpdated->blocks);
+        $this->assertCount(2, $retrievedUpdated->getBlocks());
         /** @var MarkdownBlock $updatedBlock0 */
-        $updatedBlock0 = $retrievedUpdated->blocks[0];
+        $updatedBlock0 = $retrievedUpdated->getBlocks()[0];
         /** @var MarkdownBlock $updatedBlock1 */
-        $updatedBlock1 = $retrievedUpdated->blocks[1];
+        $updatedBlock1 = $retrievedUpdated->getBlocks()[1];
         $this->assertStringContainsString('Updated Overview', $updatedBlock0->source);
         $this->assertStringContainsString('Updated Section', $updatedBlock1->source);
 
         // Test findAll with multiple items
         $allContent = $this->repository->findAll();
         $this->assertCount(1, $allContent);
-        $this->assertEquals($content->id, $allContent[0]->id);
+        $this->assertEquals($content->getId(), $allContent[0]->getId());
 
         // Test deletion
-        $this->repository->delete($content->id);
-        $deletedContent = $this->repository->findById($content->id);
+        $this->repository->delete($content->getId());
+        $deletedContent = $this->repository->findById($content->getId());
         $this->assertNull($deletedContent);
 
         $emptyList = $this->repository->findAll();
@@ -379,11 +379,11 @@ final class SystemValidationTest extends TestCase
             );
 
             $this->repository->save($content);
-            $retrieved = $this->repository->findById($content->id);
+            $retrieved = $this->repository->findById($content->getId());
 
             $this->assertNotNull($retrieved, "Test case {$index} should persist correctly");
-            $this->assertEquals($content->type, $retrieved->type);
-            $this->assertCount(count($blocks), $retrieved->blocks);
+            $this->assertEquals($content->getType(), $retrieved->getType());
+            $this->assertCount(count($blocks), $retrieved->getBlocks());
         }
     }
 }

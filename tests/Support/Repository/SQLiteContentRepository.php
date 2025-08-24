@@ -23,7 +23,7 @@ final class SQLiteContentRepository implements ContentRepositoryInterface
         try {
             $this->pdo->beginTransaction();
 
-            $blocksJson = json_encode($this->serializeBlocks($content->blocks), JSON_THROW_ON_ERROR);
+            $blocksJson = json_encode($this->serializeBlocks($content->getBlocks()), JSON_THROW_ON_ERROR);
 
             $stmt = $this->pdo->prepare('
                 INSERT OR REPLACE INTO content_items
@@ -32,20 +32,20 @@ final class SQLiteContentRepository implements ContentRepositoryInterface
             ');
 
             $stmt->execute([
-                $content->id,
-                $content->type,
-                $content->title,
-                $content->summary,
+                $content->getId(),
+                $content->getType(),
+                $content->getTitle(),
+                $content->getSummary(),
                 $blocksJson,
-                $content->createdAt->format('c'),
-                $content->updatedAt->format('c'),
+                $content->getCreatedAt()->format('c'),
+                $content->getUpdatedAt()->format('c'),
             ]);
 
             $this->pdo->commit();
         } catch (\PDOException $e) {
             $this->pdo->rollBack();
 
-            throw RepositoryException::saveFailure($content->id, $e->getMessage());
+            throw RepositoryException::saveFailure($content->getId(), $e->getMessage());
         } catch (\Exception $e) {
             $this->pdo->rollBack();
 
@@ -219,7 +219,7 @@ final class SQLiteContentRepository implements ContentRepositoryInterface
                 ORDER BY created_at DESC
                 LIMIT ?
             ');
-            $stmt->execute([$content->type, $content->id, $limit]);
+            $stmt->execute([$content->getType(), $content->getId(), $limit]);
             $contentRows = $stmt->fetchAll();
 
             $results = [];
