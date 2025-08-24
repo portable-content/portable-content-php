@@ -104,7 +104,7 @@ final class PerformanceAndEdgeCaseTest extends TestCase
         $this->assertEquals($content->getId(), $retrieved->getId());
         /** @var MarkdownBlock $firstBlock */
         $firstBlock = $retrieved->getBlocks()[0];
-        $this->assertStringContainsString('Section', $firstBlock->source);
+        $this->assertStringContainsString('Section', $firstBlock->getContent());
 
         // Performance assertion - should complete within reasonable time (adjust as needed)
         $this->assertLessThan(1.0, $processingTime, 'Large content processing should complete within 1 second');
@@ -221,8 +221,8 @@ final class PerformanceAndEdgeCaseTest extends TestCase
         $this->assertStringContainsString('中文', $retrieved->getSummary());
         /** @var MarkdownBlock $firstBlock */
         $firstBlock = $retrieved->getBlocks()[0];
-        $this->assertStringContainsString('你好世界', $firstBlock->source);
-        $this->assertStringContainsString('🎉', $firstBlock->source);
+        $this->assertStringContainsString('你好世界', $firstBlock->getContent());
+        $this->assertStringContainsString('🎉', $firstBlock->getContent());
     }
 
     public function testEdgeCaseLineEndingsAndWhitespace(): void

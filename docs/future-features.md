@@ -88,61 +88,141 @@ php bin/server.php --database=./dev.db --port=3000
 ## Block System Extensions
 
 ### Additional Block Types
-Currently only MarkdownBlock is implemented. Planned block types:
+Currently only MarkdownBlock is implemented. All future block types will extend AbstractBlock. Planned block types:
 
 #### HTML Block
 ```php
-class HtmlBlock implements BlockInterface
+class HtmlBlock extends AbstractBlock
 {
+    private string $html;
+    private bool $sanitized;
+
     public function __construct(
-        public readonly string $id,
-        public readonly string $html,
-        public readonly bool $sanitized,
-        public readonly DateTimeImmutable $createdAt,
-    ) {}
+        string $id,
+        string $html,
+        bool $sanitized,
+        DateTimeImmutable $createdAt,
+    ) {
+        parent::__construct($id, $createdAt);
+        $this->html = $html;
+        $this->sanitized = $sanitized;
+    }
+
+    public function getHtml(): string { return $this->html; }
+    public function setHtml(string $html): void { $this->html = $html; }
+    public function isSanitized(): bool { return $this->sanitized; }
+    public function setSanitized(bool $sanitized): void { $this->sanitized = $sanitized; }
+
+    public function getType(): string { return 'html'; }
+    public function getContent(): string { return $this->html; }
+    // ... other required methods
 }
 ```
 
 #### Code Block
 ```php
-class CodeBlock implements BlockInterface
+class CodeBlock extends AbstractBlock
 {
+    private string $language;
+    private string $code;
+    private ?string $filename;
+
     public function __construct(
-        public readonly string $id,
-        public readonly string $language,
-        public readonly string $code,
-        public readonly ?string $filename,
-        public readonly DateTimeImmutable $createdAt,
-    ) {}
+        string $id,
+        string $language,
+        string $code,
+        ?string $filename,
+        DateTimeImmutable $createdAt,
+    ) {
+        parent::__construct($id, $createdAt);
+        $this->language = $language;
+        $this->code = $code;
+        $this->filename = $filename;
+    }
+
+    public function getLanguage(): string { return $this->language; }
+    public function setLanguage(string $language): void { $this->language = $language; }
+    public function getCode(): string { return $this->code; }
+    public function setCode(string $code): void { $this->code = $code; }
+    public function getFilename(): ?string { return $this->filename; }
+    public function setFilename(?string $filename): void { $this->filename = $filename; }
+
+    public function getType(): string { return 'code'; }
+    public function getContent(): string { return $this->code; }
+    // ... other required methods
 }
 ```
 
 #### Image Block
 ```php
-class ImageBlock implements BlockInterface
+class ImageBlock extends AbstractBlock
 {
+    private string $url;
+    private ?string $alt;
+    private ?string $caption;
+    private array $metadata;
+
     public function __construct(
-        public readonly string $id,
-        public readonly string $url,
-        public readonly ?string $alt,
-        public readonly ?string $caption,
-        public readonly array $metadata, // width, height, format, etc.
-        public readonly DateTimeImmutable $createdAt,
-    ) {}
+        string $id,
+        string $url,
+        ?string $alt,
+        ?string $caption,
+        array $metadata, // width, height, format, etc.
+        DateTimeImmutable $createdAt,
+    ) {
+        parent::__construct($id, $createdAt);
+        $this->url = $url;
+        $this->alt = $alt;
+        $this->caption = $caption;
+        $this->metadata = $metadata;
+    }
+
+    public function getUrl(): string { return $this->url; }
+    public function setUrl(string $url): void { $this->url = $url; }
+    public function getAlt(): ?string { return $this->alt; }
+    public function setAlt(?string $alt): void { $this->alt = $alt; }
+    public function getCaption(): ?string { return $this->caption; }
+    public function setCaption(?string $caption): void { $this->caption = $caption; }
+    public function getMetadata(): array { return $this->metadata; }
+    public function setMetadata(array $metadata): void { $this->metadata = $metadata; }
+
+    public function getType(): string { return 'image'; }
+    public function getContent(): string { return $this->url; }
+    // ... other required methods
 }
 ```
 
 #### Embed Block
 ```php
-class EmbedBlock implements BlockInterface
+class EmbedBlock extends AbstractBlock
 {
+    private string $embedType;
+    private string $url;
+    private array $metadata;
+
     public function __construct(
-        public readonly string $id,
-        public readonly string $type, // youtube, twitter, etc.
-        public readonly string $url,
-        public readonly array $metadata,
-        public readonly DateTimeImmutable $createdAt,
-    ) {}
+        string $id,
+        string $embedType, // youtube, twitter, etc.
+        string $url,
+        array $metadata,
+        DateTimeImmutable $createdAt,
+    ) {
+        parent::__construct($id, $createdAt);
+        $this->embedType = $embedType;
+        $this->url = $url;
+        $this->metadata = $metadata;
+    }
+
+    public function getEmbedType(): string { return $this->embedType; }
+    public function setEmbedType(string $embedType): void { $this->embedType = $embedType; }
+    public function getUrl(): string { return $this->url; }
+    public function setUrl(string $url): void { $this->url = $url; }
+    public function getMetadata(): array { return $this->metadata; }
+    public function setMetadata(array $metadata): void { $this->metadata = $metadata; }
+
+    public function getType(): string { return 'embed'; }
+    public function getContent(): string { return $this->url; }
+    // ... other required methods
 }
 ```
 

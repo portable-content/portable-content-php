@@ -49,8 +49,8 @@ final class SQLiteContentRepositoryTest extends IntegrationTestCase
         // Check blocks are loaded correctly
         $this->assertInstanceOf(MarkdownBlock::class, $retrieved->getBlocks()[0]);
         $this->assertInstanceOf(MarkdownBlock::class, $retrieved->getBlocks()[1]);
-        $this->assertEquals('# Title', $retrieved->getBlocks()[0]->source);
-        $this->assertEquals('Some content here.', $retrieved->getBlocks()[1]->source);
+        $this->assertEquals('# Title', $retrieved->getBlocks()[0]->getContent());
+        $this->assertEquals('Some content here.', $retrieved->getBlocks()[1]->getContent());
     }
 
     public function testFindByIdReturnsNullForNonExistentContent(): void
@@ -76,7 +76,7 @@ final class SQLiteContentRepositoryTest extends IntegrationTestCase
         $this->assertEquals('Updated Title', $retrieved->getTitle());
         $this->assertCount(1, $retrieved->getBlocks());
         $this->assertInstanceOf(MarkdownBlock::class, $retrieved->getBlocks()[0]);
-        $this->assertEquals('# New Block', $retrieved->getBlocks()[0]->source);
+        $this->assertEquals('# New Block', $retrieved->getBlocks()[0]->getContent());
     }
 
     public function testDelete(): void

@@ -286,10 +286,10 @@ final class SystemValidationTest extends TestCase
         /** @var MarkdownBlock $block3 */
         $block3 = $retrieved->getBlocks()[3];
 
-        $this->assertStringContainsString('API Overview', $block0->source);
-        $this->assertStringContainsString('Authentication', $block1->source);
-        $this->assertStringContainsString('Endpoints', $block2->source);
-        $this->assertStringContainsString('Examples', $block3->source);
+        $this->assertStringContainsString('API Overview', $block0->getContent());
+        $this->assertStringContainsString('Authentication', $block1->getContent());
+        $this->assertStringContainsString('Endpoints', $block2->getContent());
+        $this->assertStringContainsString('Examples', $block3->getContent());
 
         // Test update with fewer blocks
         $updatedBlocks = [
@@ -307,8 +307,8 @@ final class SystemValidationTest extends TestCase
         $updatedBlock0 = $retrievedUpdated->getBlocks()[0];
         /** @var MarkdownBlock $updatedBlock1 */
         $updatedBlock1 = $retrievedUpdated->getBlocks()[1];
-        $this->assertStringContainsString('Updated Overview', $updatedBlock0->source);
-        $this->assertStringContainsString('Updated Section', $updatedBlock1->source);
+        $this->assertStringContainsString('Updated Overview', $updatedBlock0->getContent());
+        $this->assertStringContainsString('Updated Section', $updatedBlock1->getContent());
 
         // Test findAll with multiple items
         $allContent = $this->repository->findAll();

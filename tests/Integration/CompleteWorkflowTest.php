@@ -121,7 +121,7 @@ final class CompleteWorkflowTest extends TestCase
 
         $retrievedBlock = $retrievedContent->getBlocks()[0];
         $this->assertInstanceOf(MarkdownBlock::class, $retrievedBlock);
-        $this->assertEquals($markdownBlock->source, $retrievedBlock->source);
+        $this->assertEquals($markdownBlock->getContent(), $retrievedBlock->getContent());
 
         // Step 6: Update workflow
         $updateData = [
@@ -162,7 +162,7 @@ final class CompleteWorkflowTest extends TestCase
         $this->assertInstanceOf(MarkdownBlock::class, $finalRetrievedContent->getBlocks()[0]);
         /** @var MarkdownBlock $firstBlock */
         $firstBlock = $finalRetrievedContent->getBlocks()[0];
-        $this->assertStringContainsString('Updated Content', $firstBlock->source);
+        $this->assertStringContainsString('Updated Content', $firstBlock->getContent());
 
         // Step 8: List all content
         $allContent = $this->repository->findAll();
@@ -241,9 +241,9 @@ final class CompleteWorkflowTest extends TestCase
         /** @var MarkdownBlock $block2 */
         $block2 = $retrievedContent->getBlocks()[2];
 
-        $this->assertStringContainsString('Introduction', $block0->source);
-        $this->assertStringContainsString('Section 1', $block1->source);
-        $this->assertStringContainsString('Section 2', $block2->source);
+        $this->assertStringContainsString('Introduction', $block0->getContent());
+        $this->assertStringContainsString('Section 1', $block1->getContent());
+        $this->assertStringContainsString('Section 2', $block2->getContent());
     }
 
     public function testWorkflowWithValidationErrors(): void

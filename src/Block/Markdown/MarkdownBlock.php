@@ -4,17 +4,21 @@ declare(strict_types=1);
 
 namespace PortableContent\Block\Markdown;
 
-use PortableContent\Contracts\Block\BlockInterface;
+use PortableContent\Block\AbstractBlock;
 use PortableContent\Exception\InvalidContentException;
-use Ramsey\Uuid\Uuid;
 
-final class MarkdownBlock implements BlockInterface
+final class MarkdownBlock extends AbstractBlock
 {
+    private string $source;
+
     public function __construct(
-        public readonly string $id,
-        public readonly string $source,
-        public readonly \DateTimeImmutable $createdAt,
-    ) {}
+        string $id,
+        string $source,
+        \DateTimeImmutable $createdAt,
+    ) {
+        parent::__construct($id, $createdAt);
+        $this->source = $source;
+    }
 
     public static function create(string $source): self
     {
@@ -23,29 +27,20 @@ final class MarkdownBlock implements BlockInterface
         }
 
         return new self(
-            id: Uuid::uuid4()->toString(),
+            id: self::generateId(),
             source: $source,
-            createdAt: new \DateTimeImmutable()
+            createdAt: self::generateCreatedAt()
         );
     }
 
-    public function withSource(string $source): self
+    public function getSource(): string
     {
-        return new self(
-            id: $this->id,
-            source: $source,
-            createdAt: $this->createdAt
-        );
+        return $this->source;
     }
 
-    public function getId(): string
+    public function setSource(string $source): void
     {
-        return $this->id;
-    }
-
-    public function getCreatedAt(): \DateTimeImmutable
-    {
-        return $this->createdAt;
+        $this->source = $source;
     }
 
     public function isEmpty(): bool

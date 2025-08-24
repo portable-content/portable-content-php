@@ -23,7 +23,7 @@ $note = ContentItem::create('note', 'My First Note', 'A simple note example', [$
 $repository = RepositoryFactory::createInMemoryRepository();
 $repository->save($note);
 
-echo "Created note: {$note->title} (ID: {$note->id})\n";
+echo "Created note: {$note->getTitle()} (ID: {$note->getId()})\n";
 ```
 
 ### 2. Multi-Block Article
@@ -50,7 +50,7 @@ $article = ContentItem::create(
 );
 
 $repository->save($article);
-echo "Created article with " . count($article->blocks) . " blocks\n";
+echo "Created article with " . count($article->getBlocks()) . " blocks\n";
 ```
 
 ## Validation Examples
@@ -106,8 +106,8 @@ if ($result->isValid()) {
     
     $repository->save($content);
     echo "Blog post created successfully!\n";
-    echo "Type: {$content->type}\n";
-    echo "Title: {$content->title}\n";
+    echo "Type: {$content->getType()}\n";
+    echo "Title: {$content->getTitle()}\n";
 } else {
     echo "Validation failed:\n";
     foreach ($result->getErrors() as $field => $errors) {
@@ -156,12 +156,12 @@ function createContentEndpoint(array $requestData): array
         return [
             'success' => true,
             'data' => [
-                'id' => $content->id,
-                'type' => $content->type,
-                'title' => $content->title,
-                'summary' => $content->summary,
-                'block_count' => count($content->blocks),
-                'created_at' => $content->createdAt->format('c')
+                'id' => $content->getId(),
+                'type' => $content->getType(),
+                'title' => $content->getTitle(),
+                'summary' => $content->getSummary(),
+                'block_count' => count($content->getBlocks()),
+                'created_at' => $content->getCreatedAt()->format('c')
             ]
         ];
         
@@ -190,20 +190,20 @@ $content = ContentItem::create('note', 'Test Note');
 $repository->save($content);
 
 // Read
-$retrieved = $repository->findById($content->id);
+$retrieved = $repository->findById($content->getId());
 if ($retrieved) {
-    echo "Found: {$retrieved->title}\n";
+    echo "Found: {$retrieved->getTitle()}\n";
 }
 
-// Update (immutable pattern)
-$updated = $retrieved->withTitle('Updated Title');
-$repository->save($updated);
+// Update (mutable pattern)
+$retrieved->setTitle('Updated Title');
+$repository->save($retrieved);
 
 // Delete
-$repository->delete($content->id);
+$repository->delete($content->getId());
 
 // Verify deletion
-$deleted = $repository->findById($content->id);
+$deleted = $repository->findById($content->getId());
 assert($deleted === null);
 ```
 
@@ -240,7 +240,7 @@ $defaultRepo = RepositoryFactory::getDefaultRepository();
 foreach ([$memoryRepo, $fileRepo, $defaultRepo] as $repo) {
     $content = ContentItem::create('test', 'Test Content');
     $repo->save($content);
-    $retrieved = $repo->findById($content->id);
+    $retrieved = $repo->findById($content->getId());
     assert($retrieved !== null);
 }
 ```
@@ -267,7 +267,7 @@ function migrateContent(
                 $destination->save($content);
                 $migrated++;
             } catch (RepositoryException $e) {
-                echo "Failed to migrate {$content->id}: {$e->getMessage()}\n";
+                echo "Failed to migrate {$content->getId()}: {$e->getMessage()}\n";
             }
         }
         
@@ -297,19 +297,11 @@ function transformContentType(
     $allContent = $repository->findAll(limit: 1000);
     
     foreach ($allContent as $content) {
-        if ($content->type === $fromType) {
-            // Create new content with updated type
-            $updated = new ContentItem(
-                id: $content->id,
-                type: $toType,
-                title: $content->title,
-                summary: $content->summary,
-                blocks: $content->blocks,
-                createdAt: $content->createdAt,
-                updatedAt: new DateTimeImmutable()
-            );
-            
-            $repository->save($updated);
+        if ($content->getType() === $fromType) {
+            // Update content type directly (mutable pattern)
+            $content->setType($toType);
+
+            $repository->save($content);
             $transformed++;
         }
     }
@@ -358,7 +350,7 @@ function createBulkContent(
             );
             
             $repository->save($content);
-            $created[] = $content->id;
+            $created[] = $content->getId();
             
         } catch (Exception $e) {
             $errors[$index] = ['general' => [$e->getMessage()]];
@@ -433,7 +425,7 @@ function safeContentCreation(array $data): array
         
         return [
             'success' => true,
-            'content_id' => $content->id
+            'content_id' => $content->getId()
         ];
         
     } catch (InvalidContentException $e) {
@@ -514,11 +506,11 @@ class ContentServiceTest extends TestCase
         $content = ContentItem::create('test', 'Test Title', null, [$block]);
         
         $this->repository->save($content);
-        $retrieved = $this->repository->findById($content->id);
-        
+        $retrieved = $this->repository->findById($content->getId());
+
         $this->assertNotNull($retrieved);
-        $this->assertEquals($content->title, $retrieved->title);
-        $this->assertCount(1, $retrieved->blocks);
+        $this->assertEquals($content->getTitle(), $retrieved->getTitle());
+        $this->assertCount(1, $retrieved->getBlocks());
     }
 }
 ```

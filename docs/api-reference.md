@@ -6,19 +6,19 @@ Complete API documentation for the Portable Content PHP library.
 
 ### ContentItem
 
-Immutable content item containing metadata and blocks.
+Mutable content item containing metadata and blocks.
 
 #### Constructor
 
 ```php
 public function __construct(
-    public readonly string $id,
-    public readonly string $type,
-    public readonly ?string $title,
-    public readonly ?string $summary,
-    public readonly array $blocks,  // BlockInterface[]
-    public readonly DateTimeImmutable $createdAt,
-    public readonly DateTimeImmutable $updatedAt,
+    string $id,
+    string $type,
+    ?string $title,
+    ?string $summary,
+    array $blocks,  // BlockInterface[]
+    DateTimeImmutable $createdAt,
+    DateTimeImmutable $updatedAt,
 )
 ```
 
@@ -53,49 +53,81 @@ $content = ContentItem::create('note', 'My Note', 'A simple note');
 
 #### Instance Methods
 
-##### `withBlocks()`
+##### Getters
 
 ```php
-public function withBlocks(array $blocks): self
+public function getId(): string
+public function getType(): string
+public function getTitle(): ?string
+public function getSummary(): ?string
+public function getBlocks(): array  // BlockInterface[]
+public function getCreatedAt(): DateTimeImmutable
+public function getUpdatedAt(): DateTimeImmutable
 ```
 
-Returns new instance with updated blocks.
-
-##### `withTitle()`
+##### Setters
 
 ```php
-public function withTitle(?string $title): self
+public function setTitle(?string $title): void
+public function setSummary(?string $summary): void
+public function setBlocks(array $blocks): void  // Updates updatedAt timestamp
 ```
 
-Returns new instance with updated title.
-
-##### `withSummary()`
+##### Block Management
 
 ```php
-public function withSummary(?string $summary): self
+public function addBlock(BlockInterface $block): void  // Updates updatedAt timestamp
 ```
 
-Returns new instance with updated summary.
+### AbstractBlock
 
-##### `addBlock()`
+Base class for all block implementations.
+
+#### Constructor
 
 ```php
-public function addBlock(BlockInterface $block): self
+protected function __construct(
+    string $id,
+    DateTimeImmutable $createdAt,
+)
 ```
 
-Returns new instance with additional block appended.
+#### Protected Static Methods
+
+```php
+protected static function generateId(): string
+protected static function generateCreatedAt(): DateTimeImmutable
+```
+
+#### Common Methods
+
+```php
+public function getId(): string
+public function getCreatedAt(): DateTimeImmutable
+public function setId(string $id): void
+public function setCreatedAt(DateTimeImmutable $createdAt): void
+```
+
+#### Abstract Methods
+
+```php
+abstract public function isEmpty(): bool
+abstract public function getWordCount(): int
+abstract public function getType(): string
+abstract public function getContent(): string
+```
 
 ### MarkdownBlock
 
-Immutable markdown block implementation.
+Mutable markdown block implementation extending AbstractBlock.
 
 #### Constructor
 
 ```php
 public function __construct(
-    public readonly string $id,
-    public readonly string $source,
-    public readonly DateTimeImmutable $createdAt,
+    string $id,
+    string $source,
+    DateTimeImmutable $createdAt,
 )
 ```
 
@@ -117,13 +149,21 @@ Creates a new MarkdownBlock with auto-generated ID and timestamp.
 
 #### Instance Methods
 
-##### `withSource()`
+##### `getSource()`
 
 ```php
-public function withSource(string $source): self
+public function getSource(): string
 ```
 
-Returns new instance with updated source content.
+Returns the markdown source content.
+
+##### `setSource()`
+
+```php
+public function setSource(string $source): void
+```
+
+Updates the markdown source content.
 
 ##### `getId()`
 

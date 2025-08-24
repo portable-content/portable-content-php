@@ -18,9 +18,9 @@ final class MarkdownBlockTest extends TestCase
     {
         $block = MarkdownBlock::create('# Hello World\n\nThis is a test.');
 
-        $this->assertNotEmpty($block->id);
-        $this->assertEquals('# Hello World\n\nThis is a test.', $block->source);
-        $this->assertInstanceOf(\DateTimeImmutable::class, $block->createdAt);
+        $this->assertNotEmpty($block->getId());
+        $this->assertEquals('# Hello World\n\nThis is a test.', $block->getSource());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $block->getCreatedAt());
     }
 
     public function testImplementsBlockInterface(): void
@@ -38,31 +38,31 @@ final class MarkdownBlockTest extends TestCase
         MarkdownBlock::create('   ');
     }
 
-    public function testWithSource(): void
+    public function testSetSource(): void
     {
         $block = MarkdownBlock::create('# Original');
-        $updatedBlock = $block->withSource('# Updated');
+        $originalId = $block->getId();
+        $originalCreatedAt = $block->getCreatedAt();
 
-        $this->assertEquals('# Original', $block->source); // Original unchanged
-        $this->assertEquals('# Updated', $updatedBlock->source);
-        $this->assertEquals($block->id, $updatedBlock->id); // ID preserved
-        $this->assertEquals($block->createdAt, $updatedBlock->createdAt); // Timestamp preserved
-        $this->assertNotSame($block, $updatedBlock);
+        $block->setSource('# Updated');
+
+        $this->assertEquals('# Updated', $block->getSource());
+        $this->assertEquals($originalId, $block->getId()); // ID preserved
+        $this->assertEquals($originalCreatedAt, $block->getCreatedAt()); // Timestamp preserved
     }
 
     public function testGetId(): void
     {
         $block = MarkdownBlock::create('# Test');
 
-        $this->assertEquals($block->id, $block->getId());
         $this->assertNotEmpty($block->getId());
+        $this->assertIsString($block->getId());
     }
 
     public function testGetCreatedAt(): void
     {
         $block = MarkdownBlock::create('# Test');
 
-        $this->assertEquals($block->createdAt, $block->getCreatedAt());
         $this->assertInstanceOf(\DateTimeImmutable::class, $block->getCreatedAt());
     }
 
@@ -79,26 +79,26 @@ final class MarkdownBlockTest extends TestCase
         $block = MarkdownBlock::create($source);
 
         $this->assertEquals($source, $block->getContent());
-        $this->assertEquals($block->source, $block->getContent()); // Should be the same as source property
+        $this->assertEquals($block->getSource(), $block->getContent()); // Should be the same as source property
     }
 
     public function testIsEmpty(): void
     {
         // Create a block with content, then modify it to be empty to test isEmpty()
         $block = MarkdownBlock::create('# Test');
-        $emptyBlock = $block->withSource('   ');
+        $block->setSource('   ');
         $nonEmptyBlock = MarkdownBlock::create('# Not Empty');
 
-        $this->assertTrue($emptyBlock->isEmpty());
+        $this->assertTrue($block->isEmpty());
         $this->assertFalse($nonEmptyBlock->isEmpty());
     }
 
     public function testIsEmptyWithWhitespaceOnly(): void
     {
         $block = MarkdownBlock::create('# Test');
-        $whitespaceBlock = $block->withSource("\n\t  \r\n  ");
+        $block->setSource("\n\t  \r\n  ");
 
-        $this->assertTrue($whitespaceBlock->isEmpty());
+        $this->assertTrue($block->isEmpty());
     }
 
     public function testGetWordCount(): void
@@ -107,7 +107,7 @@ final class MarkdownBlockTest extends TestCase
 
         // Count: Hello, World, This, is, a, test, with, bold, text = 9 words
         // But str_word_count might count differently, let's check actual count
-        $actualCount = str_word_count(strip_tags($block->source));
+        $actualCount = str_word_count(strip_tags($block->getSource()));
         $this->assertEquals($actualCount, $block->getWordCount());
         $this->assertGreaterThan(0, $block->getWordCount());
     }
@@ -115,9 +115,9 @@ final class MarkdownBlockTest extends TestCase
     public function testGetWordCountWithEmptyContent(): void
     {
         $block = MarkdownBlock::create('# Test');
-        $emptyBlock = $block->withSource('   ');
+        $block->setSource('   ');
 
-        $this->assertEquals(0, $emptyBlock->getWordCount());
+        $this->assertEquals(0, $block->getWordCount());
     }
 
     public function testGetWordCountStripsMarkdown(): void
@@ -125,19 +125,22 @@ final class MarkdownBlockTest extends TestCase
         $block = MarkdownBlock::create('# Heading\n\n**Bold** and *italic* text with [link](url).');
 
         // The actual word count depends on how str_word_count handles markdown
-        $actualCount = str_word_count(strip_tags($block->source));
+        $actualCount = str_word_count(strip_tags($block->getSource()));
         $this->assertEquals($actualCount, $block->getWordCount());
         $this->assertGreaterThan(0, $block->getWordCount());
     }
 
-    public function testImmutability(): void
+    public function testMutability(): void
     {
-        $original = MarkdownBlock::create('# Original');
-        $modified = $original->withSource('# Modified');
+        $block = MarkdownBlock::create('# Original');
+        $originalId = $block->getId();
+        $originalCreatedAt = $block->getCreatedAt();
 
-        $this->assertNotSame($original, $modified);
-        $this->assertEquals('# Original', $original->source);
-        $this->assertEquals('# Modified', $modified->source);
+        $block->setSource('# Modified');
+
+        $this->assertEquals('# Modified', $block->getSource());
+        $this->assertEquals($originalId, $block->getId()); // ID should remain the same
+        $this->assertEquals($originalCreatedAt, $block->getCreatedAt()); // CreatedAt should remain the same
     }
 
     public function testUniqueIds(): void
@@ -145,7 +148,6 @@ final class MarkdownBlockTest extends TestCase
         $block1 = MarkdownBlock::create('# Block 1');
         $block2 = MarkdownBlock::create('# Block 2');
 
-        $this->assertNotEquals($block1->id, $block2->id);
         $this->assertNotEquals($block1->getId(), $block2->getId());
     }
 
@@ -155,7 +157,7 @@ final class MarkdownBlockTest extends TestCase
         $block = MarkdownBlock::create('# Test');
         $after = new \DateTimeImmutable();
 
-        $this->assertGreaterThanOrEqual($before, $block->createdAt);
-        $this->assertLessThanOrEqual($after, $block->createdAt);
+        $this->assertGreaterThanOrEqual($before, $block->getCreatedAt());
+        $this->assertLessThanOrEqual($after, $block->getCreatedAt());
     }
 }

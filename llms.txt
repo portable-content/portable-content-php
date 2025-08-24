@@ -90,24 +90,51 @@ $content->setBlocks(array $blocks)
 $content->addBlock(BlockInterface $block)  // void return
 ```
 
-### MarkdownBlock (Immutable Block Implementation)
+### AbstractBlock (Base Block Implementation)
+```php
+// Abstract base class for all block types
+abstract class AbstractBlock implements BlockInterface {
+    protected string $id;
+    protected DateTimeImmutable $createdAt;
+
+    // Common getters/setters
+    public function getId(): string
+    public function getCreatedAt(): DateTimeImmutable
+    public function setId(string $id): void
+    public function setCreatedAt(DateTimeImmutable $createdAt): void
+
+    // Helper methods for subclasses
+    protected static function generateId(): string
+    protected static function generateCreatedAt(): DateTimeImmutable
+
+    // Abstract methods that subclasses must implement
+    abstract public function isEmpty(): bool;
+    abstract public function getWordCount(): int;
+    abstract public function getType(): string;
+    abstract public function getContent(): string;
+}
+```
+
+### MarkdownBlock (Mutable Block Implementation)
 ```php
 // Creation
 MarkdownBlock::create(string $source)
 
-// Updates
-$block->withSource(string $source)
-
 // Getters
 $block->getId()         // string (UUID)
-$block->source          // string (markdown content) - still public readonly
+$block->getSource()     // string (markdown content)
+$block->getContent()    // string (same as getSource())
 $block->getCreatedAt()  // DateTimeImmutable
+$block->getType()       // string ('markdown')
+
+// Setters (mutable)
+$block->setSource(string $source)      // void
+$block->setId(string $id)              // void (inherited)
+$block->setCreatedAt(DateTimeImmutable $createdAt) // void (inherited)
 
 // Methods
-$block->getId()
-$block->getCreatedAt()
-$block->isEmpty()
-$block->getWordCount()
+$block->isEmpty()       // bool
+$block->getWordCount()  // int
 ```
 
 ### Repository Operations
@@ -271,14 +298,17 @@ class MyTest extends TestCase {
 - Always handle potential null returns from repository
 
 ### 6. Block System
-- Currently only MarkdownBlock is implemented
-- System is extensible for future block types
+- AbstractBlock provides common functionality for all block types
+- MarkdownBlock extends AbstractBlock with mutable properties
+- System is extensible for future block types (CodeBlock, HtmlBlock, etc.)
 - All blocks must implement BlockInterface
 
 ## File Structure
 ```
 src/
-├── Block/Markdown/           # Markdown block implementation
+├── Block/
+│   ├── AbstractBlock.php     # Base class for all blocks
+│   └── Markdown/            # Markdown block implementation
 ├── Contracts/               # Interfaces
 ├── Exception/              # Exception classes
 ├── Validation/             # Validation system

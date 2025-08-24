@@ -71,9 +71,9 @@ $content = ContentItem::create(
     blocks: [$block]
 );
 
-echo "Created content: {$content->title}\n";
-echo "Content ID: {$content->id}\n";
-echo "Block count: " . count($content->blocks) . "\n";
+echo "Created content: {$content->getTitle()}\n";
+echo "Content ID: {$content->getId()}\n";
+echo "Block count: " . count($content->getBlocks()) . "\n";
 ```
 
 ### 2. Repository Usage
@@ -91,13 +91,13 @@ $repository = RepositoryFactory::createSQLiteRepository('storage/content.db');
 $repository->save($content);
 
 // Retrieve by ID
-$retrieved = $repository->findById($content->id);
+$retrieved = $repository->findById($content->getId());
 
 // List all content (with pagination)
 $allContent = $repository->findAll(limit: 10, offset: 0);
 
 // Delete content
-$repository->delete($content->id);
+$repository->delete($content->getId());
 ```
 
 ### 3. Working with Multiple Blocks
@@ -118,30 +118,34 @@ $article = ContentItem::create(
 
 // Save and retrieve
 $repository->save($article);
-$retrieved = $repository->findById($article->id);
+$retrieved = $repository->findById($article->getId());
 
-echo "Article has " . count($retrieved->blocks) . " blocks\n";
+echo "Article has " . count($retrieved->getBlocks()) . " blocks\n";
 ```
 
-### 4. Immutable Updates
+### 4. Mutable Updates
 
 ```php
-// Content objects are immutable - updates create new instances
-$originalContent = ContentItem::create('note', 'Original Title');
+// Content objects are mutable - you can modify them directly
+$content = ContentItem::create('note', 'Original Title');
 
 // Update title
-$updatedContent = $originalContent->withTitle('Updated Title');
+$content->setTitle('Updated Title');
 
 // Update blocks
 $newBlock = MarkdownBlock::create('# Updated Content');
-$updatedContent = $originalContent->withBlocks([$newBlock]);
+$content->setBlocks([$newBlock]);
 
 // Add a block
 $additionalBlock = MarkdownBlock::create('## Additional Section');
-$updatedContent = $originalContent->addBlock($additionalBlock);
+$content->addBlock($additionalBlock);
+
+// Modify existing blocks
+$existingBlock = $content->getBlocks()[0];
+$existingBlock->setSource('# Modified Content');
 
 // Save the updated version
-$repository->save($updatedContent);
+$repository->save($content);
 ```
 
 ## Input Validation and Sanitization

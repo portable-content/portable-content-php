@@ -310,10 +310,10 @@ final class SQLiteContentRepository implements ContentRepositoryInterface
         foreach ($blocks as $block) {
             if ($block instanceof MarkdownBlock) {
                 $serialized[] = [
-                    'id' => $block->id,
+                    'id' => $block->getId(),
                     'type' => 'markdown',
-                    'source' => $block->source,
-                    'created_at' => $block->createdAt->format('c'),
+                    'source' => $block->getSource(),
+                    'created_at' => $block->getCreatedAt()->format('c'),
                 ];
             }
         }
